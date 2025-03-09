@@ -38,26 +38,9 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function AuthPage() {
   const [, navigate] = useLocation();
-  const { user, loginMutation, registerMutation, forgotPasswordMutation } = useAuth() as { 
-    user: { token?: string } & { 
-      username: string; 
-      password: string; 
-      id: number; 
-      email: string; 
-      isAdmin: boolean | null; 
-      emailVerified: boolean | null; 
-      verificationToken: string | null; 
-      resetPasswordToken: string | null; 
-      resetPasswordExpires: number | null; 
-      createdAt: number | null; 
-    }; 
-    loginMutation: { mutate: (data: any) => void; isPending: boolean; };
-    registerMutation: { mutate: (data: any) => void; isPending: boolean; };
-    forgotPasswordMutation: { mutate: (data: any) => void; isPending: boolean; };
-  };
+  const { user, loginMutation, registerMutation, forgotPasswordMutation } = useAuth();
   const [showForgotPassword, setShowForgotPassword] = useState(false);
 
-  // Redirigir si el usuario ya está autenticado
   useEffect(() => {
     if (user) {
       navigate("/");
@@ -87,233 +70,156 @@ export default function AuthPage() {
     },
   });
 
-  const handleEditProduct = useCallback(async (productData: { [key: string]: any }) => {
-    if (!user || !user.isAdmin) {
-      console.error("No autenticado o no es administrador");
-      return;
-    }
-
-    try {
-      const response = await fetch(`/api/products/1`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${user.token}`, // Assuming user object has a token property
-        },
-        body: JSON.stringify(productData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Error:", errorData.error);
-      } else {
-        console.log("Producto editado con éxito");
-      }
-    } catch (error) {
-      console.error("Error:", error);
-    }
-  }, [user]);
-
   return (
-    <div className="min-h-screen grid md:grid-cols-2">
-      <div className="flex items-center justify-center p-8">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>Bienvenido a Tigre Hogar</CardTitle>
-            <CardDescription>
-              Inicia sesión o crea una cuenta para continuar
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {showForgotPassword ? (
-              <Form {...forgotPasswordForm}>
-                <form
-                  onSubmit={forgotPasswordForm.handleSubmit((data) =>
-                    forgotPasswordMutation.mutate(data)
-                  )}
-                  className="space-y-4"
-                >
-                  <FormField
-                    control={forgotPasswordForm.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="email"
-                            placeholder="tu@email.com"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <div className="space-y-2">
+    <div className="min-h-screen flex items-center justify-center bg-black py-12 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-md space-y-8">
+        <div className="text-center">
+          <h2 className="text-4xl font-bold text-white mb-2">MecaSys</h2>
+          <p className="text-gray-400">Sistema de gestión integrado</p>
+        </div>
+
+        <Tabs defaultValue="login" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 bg-gray-900">
+            <TabsTrigger value="login" className="text-white hover:text-primary">Iniciar Sesión</TabsTrigger>
+            <TabsTrigger value="register" className="text-white hover:text-primary">Registrarse</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="login">
+            <Card className="border-gray-800 bg-gray-900">
+              <CardHeader>
+                <CardTitle className="text-white">Iniciar Sesión</CardTitle>
+                <CardDescription className="text-gray-400">
+                  Ingresa tus credenciales para continuar
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Form {...loginForm}>
+                  <form onSubmit={loginForm.handleSubmit((data) => loginMutation.mutate(data))} className="space-y-4">
+                    <FormField
+                      control={loginForm.control}
+                      name="username"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-white">Usuario</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              className="bg-gray-800 border-gray-700 text-white"
+                              placeholder="Ingresa tu usuario"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={loginForm.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-white">Contraseña</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              type="password"
+                              className="bg-gray-800 border-gray-700 text-white"
+                              placeholder="Ingresa tu contraseña"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                     <Button
                       type="submit"
-                      className="w-full"
-                      disabled={forgotPasswordMutation.isPending}
+                      className="w-full bg-primary hover:bg-primary/90"
+                      disabled={loginMutation.isPending}
                     >
-                      Enviar email de recuperación
+                      {loginMutation.isPending ? "Iniciando sesión..." : "Iniciar Sesión"}
                     </Button>
+                  </form>
+                </Form>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="register">
+            <Card className="border-gray-800 bg-gray-900">
+              <CardHeader>
+                <CardTitle className="text-white">Crear Cuenta</CardTitle>
+                <CardDescription className="text-gray-400">
+                  Completa el formulario para registrarte
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Form {...registerForm}>
+                  <form onSubmit={registerForm.handleSubmit((data) => registerMutation.mutate(data))} className="space-y-4">
+                    <FormField
+                      control={registerForm.control}
+                      name="username"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-white">Usuario</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              className="bg-gray-800 border-gray-700 text-white"
+                              placeholder="Elige un nombre de usuario"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={registerForm.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-white">Email</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              type="email"
+                              className="bg-gray-800 border-gray-700 text-white"
+                              placeholder="tu@email.com"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={registerForm.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-white">Contraseña</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              type="password"
+                              className="bg-gray-800 border-gray-700 text-white"
+                              placeholder="Elige una contraseña segura"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                     <Button
-                      type="button"
-                      variant="ghost"
-                      className="w-full"
-                      onClick={() => setShowForgotPassword(false)}
+                      type="submit"
+                      className="w-full bg-primary hover:bg-primary/90"
+                      disabled={registerMutation.isPending}
                     >
-                      Volver al inicio de sesión
+                      {registerMutation.isPending ? "Registrando..." : "Registrarse"}
                     </Button>
-                  </div>
-                </form>
-              </Form>
-            ) : (
-              <Tabs defaultValue="login">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="login">Iniciar Sesión</TabsTrigger>
-                  <TabsTrigger value="register">Registrarse</TabsTrigger>
-                </TabsList>
-                <TabsContent value="login">
-                  <Form {...loginForm}>
-                    <form
-                      onSubmit={loginForm.handleSubmit((data) =>
-                        loginMutation.mutate(data)
-                      )}
-                      className="space-y-4"
-                    >
-                      <FormField
-                        control={loginForm.control}
-                        name="username"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Usuario</FormLabel>
-                            <FormControl>
-                              <Input
-                                {...field}
-                                placeholder="Ingresa tu usuario"
-                                autoComplete="username"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={loginForm.control}
-                        name="password"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Contraseña</FormLabel>
-                            <FormControl>
-                              <Input
-                                type="password"
-                                {...field}
-                                placeholder="Ingresa tu contraseña"
-                                autoComplete="current-password"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <div className="space-y-2">
-                        <Button
-                          type="submit"
-                          className="w-full"
-                          disabled={loginMutation.isPending}
-                        >
-                          {loginMutation.isPending ? "Iniciando sesión..." : "Iniciar Sesión"}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          className="w-full"
-                          onClick={() => setShowForgotPassword(true)}
-                        >
-                          ¿Olvidaste tu contraseña?
-                        </Button>
-                      </div>
-                    </form>
-                  </Form>
-                </TabsContent>
-                <TabsContent value="register">
-                  <Form {...registerForm}>
-                    <form
-                      onSubmit={registerForm.handleSubmit((data) =>
-                        registerMutation.mutate(data)
-                      )}
-                      className="space-y-4"
-                    >
-                      <FormField
-                        control={registerForm.control}
-                        name="username"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Usuario</FormLabel>
-                            <FormControl>
-                              <Input {...field} placeholder="Elige un usuario" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={registerForm.control}
-                        name="email"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Email</FormLabel>
-                            <FormControl>
-                              <Input type="email" {...field} placeholder="tu@email.com" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={registerForm.control}
-                        name="password"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Contraseña</FormLabel>
-                            <FormControl>
-                              <Input
-                                type="password"
-                                {...field}
-                                placeholder="Elige una contraseña"
-                                autoComplete="new-password"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <Button
-                        type="submit"
-                        className="w-full"
-                        disabled={registerMutation.isPending}
-                      >
-                        {registerMutation.isPending ? "Registrando..." : "Registrarse"}
-                      </Button>
-                    </form>
-                  </Form>
-                </TabsContent>
-              </Tabs>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-      <div className="hidden md:block bg-primary/5 p-8">
-        <div className="h-full flex flex-col items-center justify-center max-w-lg mx-auto space-y-8">
-          <h2 className="text-4xl font-serif">Tigre Hogar</h2>
-          <p className="text-center text-muted-foreground">
-            Tu destino para encontrar los mejores productos para el hogar.
-            Regístrate para acceder a ofertas exclusivas y guardar tus productos
-            favoritos.
-          </p>
-        </div>
+                  </form>
+                </Form>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

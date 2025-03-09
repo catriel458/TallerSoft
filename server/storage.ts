@@ -1,4 +1,4 @@
-import { products, users, type Product, type InsertProduct, type User, type InsertUser } from "@shared/schema";
+import { users, turnos, costos, type User, type InsertUser, type Turno, type InsertTurno, type Costo, type InsertCosto } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { randomBytes } from "crypto";
 import { drizzle } from "drizzle-orm/better-sqlite3";
@@ -9,11 +9,8 @@ const sqlite = new Database("./data/database.sqlite");
 const db = drizzle(sqlite);
 
 export interface IStorage {
-  getProducts(): Promise<Product[]>;
-  getProduct(id: number): Promise<Product | undefined>;
-  createProduct(product: InsertProduct): Promise<Product>;
-  updateProduct(id: number, product: InsertProduct): Promise<Product | undefined>;
-  deleteProduct(id: number): Promise<boolean>;
+  getTurnos(): Promise<Turno[]>;
+  getCostos(): Promise<Costo[]>;
 
   // User operations
   createUser(user: InsertUser): Promise<User>;
@@ -28,38 +25,12 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  async getProducts(): Promise<Product[]> {
-    return await db.select().from(products);
+  async getTurnos(): Promise<Turno[]> {
+    return await db.select().from(turnos);
   }
 
-  async getProduct(id: number): Promise<Product | undefined> {
-    const result = await db.select().from(products).where(eq(products.id, id));
-    return result.length > 0 ? result[0] : undefined;
-  }
-
-  async createProduct(insertProduct: InsertProduct): Promise<Product> {
-    const result = await db
-      .insert(products)
-      .values(insertProduct)
-      .returning();
-    return result[0];
-  }
-
-  async updateProduct(id: number, updateProduct: InsertProduct): Promise<Product | undefined> {
-    const result = await db
-      .update(products)
-      .set(updateProduct)
-      .where(eq(products.id, id))
-      .returning();
-    return result.length > 0 ? result[0] : undefined;
-  }
-
-  async deleteProduct(id: number): Promise<boolean> {
-    const result = await db
-      .delete(products)
-      .where(eq(products.id, id))
-      .returning();
-    return result.length > 0;
+  async getCostos(): Promise<Costo[]> {
+    return await db.select().from(costos);
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
@@ -119,7 +90,7 @@ export class DatabaseStorage implements IStorage {
 
   async setResetToken(email: string): Promise<string | undefined> {
     const token = randomBytes(32).toString('hex');
-    const expires = Date.now() + 3600000; 
+    const expires = Date.now() + 3600000;
 
     const result = await db
       .update(users)
@@ -142,6 +113,56 @@ export class DatabaseStorage implements IStorage {
         resetPasswordExpires: null,
       })
       .where(eq(users.resetPasswordToken, token))
+      .returning();
+    return result.length > 0;
+  }
+
+  async createTurno(insertTurno: InsertTurno): Promise<Turno> {
+    const result = await db
+      .insert(turnos)
+      .values(insertTurno)
+      .returning();
+    return result[0];
+  }
+
+  async createCosto(insertCosto: InsertCosto): Promise<Costo> {
+    const result = await db
+      .insert(costos)
+      .values(insertCosto)
+      .returning();
+    return result[0];
+  }
+
+  async updateTurno(id: number, data: InsertTurno): Promise<Turno | undefined> {
+    const result = await db
+      .update(turnos)
+      .set(data)
+      .where(eq(turnos.id, id))
+      .returning();
+    return result.length > 0 ? result[0] : undefined;
+  }
+
+  async updateCosto(id: number, data: InsertCosto): Promise<Costo | undefined> {
+    const result = await db
+      .update(costos)
+      .set(data)
+      .where(eq(costos.id, id))
+      .returning();
+    return result.length > 0 ? result[0] : undefined;
+  }
+
+  async deleteTurno(id: number): Promise<boolean> {
+    const result = await db
+      .delete(turnos)
+      .where(eq(turnos.id, id))
+      .returning();
+    return result.length > 0;
+  }
+
+  async deleteCosto(id: number): Promise<boolean> {
+    const result = await db
+      .delete(costos)
+      .where(eq(costos.id, id))
       .returning();
     return result.length > 0;
   }

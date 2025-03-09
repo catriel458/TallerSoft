@@ -1,10 +1,11 @@
 import { useAuth } from "@/hooks/use-auth";
 import { Route, useLocation } from "wouter";
 import { Loader2 } from "lucide-react";
+import { Suspense } from "react";
 
 type ProtectedRouteProps = {
   path: string;
-  component: () => JSX.Element | null;
+  component: React.ComponentType;
 };
 
 export function ProtectedRoute({ path, component: Component }: ProtectedRouteProps) {
@@ -33,7 +34,13 @@ export function ProtectedRoute({ path, component: Component }: ProtectedRoutePro
           return null;
         }
 
-        return <Component />;
+        return (
+          <Suspense fallback={<div className="flex items-center justify-center min-h-screen">
+            <Loader2 className="h-8 w-8 animate-spin" />
+          </div>}>
+            <Component />
+          </Suspense>
+        );
       }}
     </Route>
   );

@@ -1,129 +1,86 @@
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
-import ProductCard from "@/components/product-card";
-import AboutSection from "@/components/about-section";
-import { ProductFilters } from "@/components/product-filters";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
-import type { Product } from "@shared/schema";
-
-const ITEMS_PER_PAGE = 6;
+import { Carousel } from "@/components/ui/carousel";
+import type { Turno, Costo } from "@shared/schema";
 
 export default function Home() {
-  const { data: products = [], isLoading } = useQuery<Product[]>({
-    queryKey: ["/api/products"],
+  const { data: turnos = [], isLoading: turnosLoading } = useQuery<Turno[]>({
+    queryKey: ["/api/turnos"],
   });
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const [filters, setFilters] = useState<{
-    category: string | null;
-    priceRange: [number, number];
-  }>({
-    category: null,
-    priceRange: [0, Math.max(...products.map(p => p.price || 0), 1000000)], //Added || 0 to handle potential undefined prices
+  const { data: costos = [], isLoading: costosLoading } = useQuery<Costo[]>({
+    queryKey: ["/api/costos"],
   });
 
-  const filteredProducts = products.filter((product) => {
-    const matchesCategory = !filters.category || product.category === filters.category;
-    const matchesPrice = 
-      product.price >= filters.priceRange[0] && 
-      product.price <= filters.priceRange[1];
-
-    return matchesCategory && matchesPrice;
-  });
-
-  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / ITEMS_PER_PAGE));
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedProducts = filteredProducts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  const carImages = [
+    "https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    "https://images.unsplash.com/photo-1580273916550-e323be2ae537?q=80&w=1528&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    "https://images.unsplash.com/photo-1620223741726-7d39ff6e4e6c?q=80&w=1530&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+  ];
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-black">
       <Header />
 
       <main className="flex-1">
-        <section className="container mx-auto px-4 py-8">
-          <h1 className="text-4xl font-serif text-center mb-8">
-            Bienvenidos a Tigre Hogar
-          </h1>
-          <p className="text-center text-lg mb-12 text-muted-foreground">
-            Tu tienda de confianza en Zona Norte para artículos del hogar, vestimenta y mucho más
-          </p>
-
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 mb-16">
-            <div className="lg:col-span-1">
-              {products && (
-                <ProductFilters
-                  products={products}
-                  onFilterChange={(newFilters) => {
-                    setFilters(newFilters);
-                    setCurrentPage(1);
-                  }}
+        <section className="relative h-[80vh] overflow-hidden">
+          <div className="absolute inset-0 z-10 bg-gradient-to-b from-black/60 via-black/30 to-black/90" />
+          <Carousel className="h-full w-full" opts={{ loop: true }}>
+            {carImages.map((image, index) => (
+              <div key={index} className="relative h-full w-full flex-[0_0_100%]">
+                <img
+                  src={image}
+                  alt={`Car ${index + 1}`}
+                  className="h-full w-full object-cover"
                 />
-              )}
-            </div>
-
-            <div className="lg:col-span-3">
-              <h2 className="text-3xl font-serif mb-8">
-                Nuestros Productos
-              </h2>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                {isLoading ? (
-                  Array(ITEMS_PER_PAGE).fill(0).map((_, i) => (
-                    <div key={i} className="h-[300px] bg-muted animate-pulse rounded-lg" />
-                  ))
-                ) : filteredProducts.length === 0 ? (
-                  <div className="col-span-full text-center text-muted-foreground">
-                    No se encontraron productos que coincidan con los filtros seleccionados.
-                  </div>
-                ) : (
-                  paginatedProducts.map((product) => (
-                    <ProductCard key={product.id} product={product} />
-                  ))
-                )}
               </div>
-
-              {totalPages > 1 && (
-                <Pagination className="mt-8">
-                  <PaginationContent>
-                    <PaginationItem>
-                      <PaginationPrevious 
-                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                        className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
-                      />
-                    </PaginationItem>
-                    {[...Array(totalPages)].map((_, i) => (
-                      <PaginationItem key={i + 1}>
-                        <PaginationLink
-                          onClick={() => setCurrentPage(i + 1)}
-                          isActive={currentPage === i + 1}
-                        >
-                          {i + 1}
-                        </PaginationLink>
-                      </PaginationItem>
-                    ))}
-                    <PaginationItem>
-                      <PaginationNext
-                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                        className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
-                      />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
-              )}
+            ))}
+          </Carousel>
+          <div className="absolute inset-0 z-20 flex items-center justify-center text-center">
+            <div className="max-w-4xl px-4">
+              <h1 className="text-5xl font-bold mb-6 text-white animate-fade-in hover:scale-105 transition-transform">
+                Sistema de gestión integrado
+              </h1>
+              <p className="text-xl text-gray-300 mb-8 animate-fade-in-delayed hover:text-white transition-colors">
+                Organiza tus turnos, trabajos y muchos más, todo en una misma app
+              </p>
+              <button className="bg-primary hover:bg-primary/90 text-white px-8 py-3 rounded-md text-lg font-semibold transition-all hover:scale-105 hover:shadow-lg">
+                Agendar Turno
+              </button>
             </div>
           </div>
         </section>
 
-        <AboutSection />
+        <section className="container mx-auto px-4 py-16">
+          <h2 className="text-3xl font-bold text-white text-center mb-12 hover:text-primary transition-colors">
+            Funcionalidades del Sistema
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              {
+                title: "Gestión de Turnos",
+                description: "Administra eficientemente los turnos y citas de tu taller",
+              },
+              {
+                title: "Control de Trabajos",
+                description: "Seguimiento detallado de reparaciones y mantenimientos en curso",
+              },
+              {
+                title: "Gestión de Costos",
+                description: "Control preciso de presupuestos y facturación",
+              },
+            ].map((service, index) => (
+              <div
+                key={index}
+                className="p-6 bg-gray-900 rounded-lg border border-gray-800 hover:border-primary hover:scale-105 transition-all cursor-pointer shadow-md"
+              >
+                <h3 className="text-xl font-bold text-white mb-4 hover:text-primary transition-colors">{service.title}</h3>
+                <p className="text-gray-400 hover:text-gray-300 transition-colors">{service.description}</p>
+              </div>
+            ))}
+          </div>
+        </section>
       </main>
 
       <Footer />

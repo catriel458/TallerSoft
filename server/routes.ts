@@ -3,7 +3,7 @@ import type { SessionData } from "express-session";
 import session from "express-session";
 import { createServer } from "http";
 import { storage } from "./storage";
-import { insertProductSchema } from "@shared/schema";
+import { insertTurnoSchema, insertCostoSchema } from "@shared/schema";
 
 declare module "express-session" {
   interface SessionData {
@@ -31,53 +31,96 @@ app.use((req, _res, next) => {
 });
 
 export function registerRoutes(app: Express) {
-  app.get("/api/products", async (_req, res) => {
-    const products = await storage.getProducts();
-    res.json(products);
+  app.get("/api/turnos", async (_req, res) => {
+    const turnos = await storage.getTurnos();
+    res.json(turnos);
   });
 
-  app.post("/api/products", async (req, res) => {
-    // Mantuve esta verificación ya que solo mencionaste editar/borrar
-    if (!req.session.isAdmin) {
-      return res.status(403).json({ error: "Solo los administradores pueden agregar productos" });
-    }
-    
-    const result = insertProductSchema.safeParse(req.body);
-    if (!result.success) {
-      return res.status(400).json({ error: "Datos de producto inválidos" });
-    }
-    
-    const product = await storage.createProduct(result.data);
-    res.status(201).json(product);
+  app.get("/api/costos", async (_req, res) => {
+    const costos = await storage.getCostos();
+    res.json(costos);
   });
 
-  app.put("/api/products/:id", async (req, res) => {
-    // Eliminada la verificación de administrador
-    const id = parseInt(req.params.id);
-    const result = insertProductSchema.safeParse(req.body);
-    
-    if (!result.success) {
-      return res.status(400).json({ error: "Datos de producto inválidos" });
+  app.post("/api/turnos", async (req, res) => {
+    try {
+      const result = insertTurnoSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json(result.error);
+      }
+      const turno = await storage.createTurno(result.data);
+      res.json(turno);
+    } catch (error) {
+      res.status(500).json({ error: "Internal server error" });
     }
-    
-    const product = await storage.updateProduct(id, result.data);
-    if (!product) {
-      return res.status(404).json({ error: "Producto no encontrado" });
-    }
-    
-    res.json(product);
   });
 
-  app.delete("/api/products/:id", async (req, res) => {
-    // Eliminada la verificación de administrador
-    const id = parseInt(req.params.id);
-    const success = await storage.deleteProduct(id);
-    
-    if (!success) {
-      return res.status(404).json({ error: "Producto no encontrado" });
+  app.post("/api/costos", async (req, res) => {
+    try {
+      const result = insertCostoSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json(result.error);
+      }
+      const costo = await storage.createCosto(result.data);
+      res.json(costo);
+    } catch (error) {
+      res.status(500).json({ error: "Internal server error" });
     }
-    
-    res.status(204).send();
+  });
+
+  app.put("/api/turnos/:id", async (req, res) => {
+    try {
+      const result = insertTurnoSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json(result.error);
+      }
+      const turno = await storage.updateTurno(Number(req.params.id), result.data);
+      if (!turno) {
+        return res.status(404).json({ error: "Turno not found" });
+      }
+      res.json(turno);
+    } catch (error) {
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.delete("/api/turnos/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteTurno(Number(req.params.id));
+      if (!success) {
+        return res.status(404).json({ error: "Turno not found" });
+      }
+      res.status(204).end();
+    } catch (error) {
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.put("/api/costos/:id", async (req, res) => {
+    try {
+      const result = insertCostoSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json(result.error);
+      }
+      const costo = await storage.updateCosto(Number(req.params.id), result.data);
+      if (!costo) {
+        return res.status(404).json({ error: "Costo not found" });
+      }
+      res.json(costo);
+    } catch (error) {
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.delete("/api/costos/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteCosto(Number(req.params.id));
+      if (!success) {
+        return res.status(404).json({ error: "Costo not found" });
+      }
+      res.status(204).end();
+    } catch (error) {
+      res.status(500).json({ error: "Internal server error" });
+    }
   });
 
   return createServer(app);

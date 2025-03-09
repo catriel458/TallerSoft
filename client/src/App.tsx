@@ -5,26 +5,30 @@ import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/hooks/use-auth";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
-import AddProduct from "@/pages/add-product";
 import AuthPage from "@/pages/auth";
 import VerifyEmail from "@/pages/verify-email";
 import ProfilePage from "@/pages/profile";
 import ResetPassword from "@/pages/reset-password";
 import { ProtectedRoute } from "@/components/protected-route";
-import EditProduct from "@/pages/edit-product";
+import { lazy, Suspense } from "react";
+
+const TurnosPage = lazy(() => import("@/pages/turnos"));
+const CostosPage = lazy(() => import("@/pages/costos"));
 
 function Router() {
   return (
-    <Switch>
-      <Route path="/" component={Home} />
-      <Route path="/auth" component={AuthPage} />
-      <Route path="/verify-email" component={VerifyEmail} />
-      <Route path="/reset-password" component={ResetPassword} />
-      <ProtectedRoute path="/profile" component={ProfilePage} />
-      <ProtectedRoute path="/add-product" component={AddProduct} />
-      <Route path="/edit-product/:id" component={EditProduct} />
-      <Route component={NotFound} />
-    </Switch>
+    <Suspense fallback={<div>Loading...</div>}>
+      <Switch>
+        <Route path="/" component={Home} />
+        <Route path="/auth" component={AuthPage} />
+        <Route path="/verify-email" component={VerifyEmail} />
+        <Route path="/reset-password" component={ResetPassword} />
+        <ProtectedRoute path="/profile" component={ProfilePage} />
+        <ProtectedRoute path="/turnos" component={TurnosPage} />
+        <ProtectedRoute path="/costos" component={CostosPage} />
+        <Route component={NotFound} />
+      </Switch>
+    </Suspense>
   );
 }
 

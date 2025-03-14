@@ -11,9 +11,9 @@ export default function LandingPage() {
       <header className="fixed w-full bg-black/90 backdrop-blur-sm border-b border-gray-800">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <img src="/logo.png" alt="MecaSys Logo" className="h-10" />
+            <img src="/logo.png" alt="TallerSoft Logo" className="h-10" />
             <span className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">
-              MecaSys
+              TallerSoft
             </span>
           </div>
           <div className="flex items-center space-x-4">
@@ -106,11 +106,11 @@ export default function LandingPage() {
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center space-x-4 mb-4 md:mb-0">
-              <img src="/logo.png" alt="MecaSys Logo" className="h-8" />
-              <span className="text-xl font-bold text-white">MecaSys</span>
+              <img src="/logo.png" alt="TallerSoft Logo" className="h-8" />
+              <span className="text-xl font-bold text-white">TallerSoft</span>
             </div>
             <div className="text-gray-400 text-sm">
-              © {new Date().getFullYear()} MecaSys. Todos los derechos reservados.
+              © {new Date().getFullYear()} TallerSoft. Todos los derechos reservados.
             </div>
           </div>
         </div>

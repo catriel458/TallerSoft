@@ -15,49 +15,16 @@ import { apiRequest } from "@/lib/queryClient";
 export default function ResetPasswordPage() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-
-  // Obtener el token de la URL
-  const token = new URLSearchParams(window.location.search).get("token");
-
-  if (!token) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>Enlace inválido</CardTitle>
-            <CardDescription>
-              El enlace para restablecer la contraseña es inválido o ha expirado.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={() => navigate("/auth")} className="w-full">
-              Volver al inicio de sesión
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (password.length < 6) {
-      toast({
-        title: "Error",
-        description: "La contraseña debe tener al menos 6 caracteres",
-        variant: "destructive",
-      });
-      return;
-    }
 
-    if (password !== confirmPassword) {
+    if (!email) {
       toast({
         title: "Error",
-        description: "Las contraseñas no coinciden",
+        description: "Por favor ingresa tu email",
         variant: "destructive",
       });
       return;
@@ -66,21 +33,20 @@ export default function ResetPasswordPage() {
     setIsLoading(true);
 
     try {
-      await apiRequest("POST", "/api/reset-password", {
-        token,
-        password,
+      await apiRequest("POST", "/api/forgot-password", {
+        email,
       });
 
       toast({
         title: "¡Éxito!",
-        description: "Tu contraseña ha sido actualizada correctamente",
+        description: "Se ha enviado un enlace a tu correo para restablecer la contraseña",
       });
 
       navigate("/auth");
     } catch (error) {
       toast({
         title: "Error",
-        description: "No se pudo restablecer la contraseña. El enlace puede haber expirado.",
+        description: "No se pudo enviar el correo de restablecimiento",
         variant: "destructive",
       });
     } finally {
@@ -89,49 +55,42 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Restablecer contraseña</CardTitle>
-          <CardDescription>
-            Ingresa tu nueva contraseña
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="password">
-                Nueva contraseña
-              </label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Ingresa tu nueva contraseña"
-                required
-                minLength={6}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="confirmPassword">
-                Confirmar contraseña
-              </label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Confirma tu nueva contraseña"
-                required
-              />
-            </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Restableciendo..." : "Restablecer contraseña"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+    <div className="min-h-screen flex items-center justify-center bg-black py-12 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-md space-y-8">
+        <div className="text-center">
+          <h2 className="text-4xl font-bold text-white mb-2">TallerSoft</h2>
+          <p className="text-gray-400">Sistema de gestión integrado</p>
+        </div>
+        <Card className="w-full max-w-md border-gray-800 bg-gray-900">
+          <CardHeader>
+            <CardTitle className="text-white">Restablecer Contraseña</CardTitle>
+            <CardDescription className="text-gray-400">
+              Ingresa tu email para restablecer tu contraseña
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-200" htmlFor="email">
+                  Email
+                </label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Ingresa tu email"
+                  required
+                  className="bg-gray-800 border-gray-700 text-white"
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? "Enviando..." : "Enviar enlace de restablecimiento"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

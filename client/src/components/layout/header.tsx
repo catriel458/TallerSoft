@@ -25,21 +25,20 @@ export default function Header() {
   const DesktopMenu = () => (
     <div className="flex items-center space-x-6">
       <Link href="/" className="flex items-center space-x-2">
-        <img src="/logo.png" alt="MecaSys Logo" className="h-10" />
-        <span className="text-xl font-bold">MecaSys</span>
+        <img src="https://i.ibb.co/S7KSfMzV/logotallersoft.png" alt="TallerSoft Logo" className="h-24 w-auto filter brightness-0 invert" />
       </Link>
 
       <div className="flex-1" />
 
       <Link href="/turnos">
-        <Button variant="ghost" className="gap-2 text-white hover:text-primary">
+        <Button variant="ghost" className="gap-2 text-white dark:text-white hover:text-primary dark:hover:text-primary">
           <Calendar className="h-4 w-4" />
           Turnos
         </Button>
       </Link>
 
       <Link href="/costos">
-        <Button variant="ghost" className="gap-2 text-white hover:text-primary">
+        <Button variant="ghost" className="gap-2 text-white dark:text-white hover:text-primary dark:hover:text-primary">
           <DollarSign className="h-4 w-4" />
           Costos
         </Button>
@@ -48,7 +47,7 @@ export default function Header() {
       <Button
         variant="ghost"
         size="icon"
-        className="text-white hover:text-primary"
+        className="text-white dark:text-white hover:text-primary dark:hover:text-primary"
         onClick={() => setTheme(theme === "light" ? "dark" : "light")}
       >
         {theme === "light" ? (

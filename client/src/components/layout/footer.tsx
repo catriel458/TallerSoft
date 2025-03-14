@@ -5,9 +5,8 @@ export default function Footer() {
     <footer className="bg-black/95 border-t border-gray-800">
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center justify-items-center">
-          <div className="flex items-center space-x-3 hover:scale-105 transition-transform">
-            <img src="/logo.png" alt="MecaSys Logo" className="h-10 w-auto" />
-            <h2 className="text-2xl font-bold text-white hover:text-primary transition-colors">MecaSys</h2>
+          <div className="flex items-center hover:scale-105 transition-transform">
+            <img src="https://i.ibb.co/S7KSfMzV/logotallersoft.png" alt="TallerSoft Logo" className="h-24 w-auto filter brightness-0 invert" />
           </div>
 
           <div className="text-center">
@@ -48,7 +47,7 @@ export default function Footer() {
 
         <div className="mt-8 text-center border-t border-gray-800 pt-8">
           <p className="text-sm text-gray-400 hover:text-gray-300 transition-colors">
-            © {new Date().getFullYear()} MecaSys. Todos los derechos reservados.
+            © {new Date().getFullYear()} TallerSoft. Todos los derechos reservados.
           </p>
         </div>
       </div>

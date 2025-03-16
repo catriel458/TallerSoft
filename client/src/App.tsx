@@ -11,7 +11,6 @@ import ProfilePage from "@/pages/profile";
 import ResetPassword from "@/pages/reset-password";
 import { ProtectedRoute } from "@/components/protected-route";
 import { lazy, Suspense } from "react";
-import ForgotPassword from "@/pages/forgot-password";
 
 const TurnosPage = lazy(() => import("@/pages/turnos"));
 const CostosPage = lazy(() => import("@/pages/costos"));
@@ -24,7 +23,6 @@ function Router() {
         <Route path="/auth" component={AuthPage} />
         <Route path="/verify-email" component={VerifyEmail} />
         <Route path="/reset-password" component={ResetPassword} />
-        <Route path="/forgot-password" component={ForgotPassword} />
         <ProtectedRoute path="/profile" component={ProfilePage} />
         <ProtectedRoute path="/turnos" component={TurnosPage} />
         <ProtectedRoute path="/costos" component={CostosPage} />

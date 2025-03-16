@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,11 +14,15 @@ import { apiRequest } from "@/lib/queryClient";
 
 export default function ResetPasswordPage() {
   const [, navigate] = useLocation();
+  const search = useSearch();
+  const token = new URLSearchParams(search).get("token");
   const { toast } = useToast();
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!email) {
@@ -54,6 +58,61 @@ export default function ResetPasswordPage() {
     }
   };
 
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!password || !confirmPassword) {
+      toast({
+        title: "Error",
+        description: "Por favor completa todos los campos",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (password.length < 8) {
+      toast({
+        title: "Error",
+        description: "La contraseña debe tener al menos 8 caracteres",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      toast({
+        title: "Error",
+        description: "Las contraseñas no coinciden",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      await apiRequest("POST", "/api/reset-password", {
+        token,
+        password,
+      });
+
+      toast({
+        title: "¡Éxito!",
+        description: "Tu contraseña ha sido restablecida exitosamente",
+      });
+
+      navigate("/auth");
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo restablecer la contraseña. El enlace puede haber expirado",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-black py-12 px-4 sm:px-6 lg:px-8">
       <div className="w-full max-w-md space-y-8">
@@ -65,29 +124,67 @@ export default function ResetPasswordPage() {
           <CardHeader>
             <CardTitle className="text-white">Restablecer Contraseña</CardTitle>
             <CardDescription className="text-gray-400">
-              Ingresa tu email para restablecer tu contraseña
+              {token
+                ? "Ingresa tu nueva contraseña"
+                : "Ingresa tu email para restablecer tu contraseña"}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-200" htmlFor="email">
-                  Email
-                </label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Ingresa tu email"
-                  required
-                  className="bg-gray-800 border-gray-700 text-white"
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Enviando..." : "Enviar enlace de restablecimiento"}
-              </Button>
-            </form>
+            {token ? (
+              <form onSubmit={handleResetPassword} className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-200" htmlFor="password">
+                    Nueva Contraseña
+                  </label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Ingresa tu nueva contraseña"
+                    required
+                    className="bg-gray-800 border-gray-700 text-white"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-200" htmlFor="confirmPassword">
+                    Confirmar Contraseña
+                  </label>
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Confirma tu nueva contraseña"
+                    required
+                    className="bg-gray-800 border-gray-700 text-white"
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? "Guardando..." : "Guardar nueva contraseña"}
+                </Button>
+              </form>
+            ) : (
+              <form onSubmit={handleForgotPassword} className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-200" htmlFor="email">
+                    Email
+                  </label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Ingresa tu email"
+                    required
+                    className="bg-gray-800 border-gray-700 text-white"
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? "Enviando..." : "Enviar enlace de restablecimiento"}
+                </Button>
+              </form>
+            )}
           </CardContent>
         </Card>
       </div>

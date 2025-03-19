@@ -138,16 +138,20 @@ export default function ReparacionesPage() {
             header: "Apellido",
         },
         {
-            accessorKey: "cantidadKm",
-            header: "Kilómetros",
-        },
-        {
             accessorKey: "fecha",
             header: "Fecha",
         },
         {
             accessorKey: "reparaciones",
             header: "Reparaciones",
+        },
+        {
+            accessorKey: "costo",
+            header: "Costo",
+        },
+        {
+            accessorKey: "cantidadKm",
+            header: "Kilómetros",
         },
         {
             accessorKey: "observaciones",
@@ -295,7 +299,12 @@ export default function ReparacionesPage() {
                                                 <FormItem>
                                                     <FormLabel>Kilómetros</FormLabel>
                                                     <FormControl>
-                                                        <Input type="number" {...field} onChange={e => field.onChange(+e.target.value)} />
+                                                        <Input
+                                                            type="number"
+                                                            step="any"
+                                                            {...field}
+                                                            onChange={e => field.onChange(parseFloat(e.target.value))}
+                                                        />
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
@@ -314,19 +323,39 @@ export default function ReparacionesPage() {
                                                 </FormItem>
                                             )}
                                         />
-                                        <FormField
-                                            control={form.control}
-                                            name="reparaciones"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Reparaciones</FormLabel>
-                                                    <FormControl>
-                                                        <Textarea {...field} />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <FormField
+                                                control={form.control}
+                                                name="reparaciones"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Reparaciones</FormLabel>
+                                                        <FormControl>
+                                                            <Textarea {...field} />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <FormField
+                                                control={form.control}
+                                                name="costo"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Costo</FormLabel>
+                                                        <FormControl>
+                                                            <Input
+                                                                type="number"
+                                                                step="any"
+                                                                {...field}
+                                                                onChange={e => field.onChange(parseFloat(e.target.value))}
+                                                            />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        </div>
                                         <FormField
                                             control={form.control}
                                             name="observaciones"
@@ -335,19 +364,6 @@ export default function ReparacionesPage() {
                                                     <FormLabel>Observaciones</FormLabel>
                                                     <FormControl>
                                                         <Textarea {...field} />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name="costo"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Costo</FormLabel>
-                                                    <FormControl>
-                                                        <Input type="number" {...field} onChange={e => field.onChange(+e.target.value)} />
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>

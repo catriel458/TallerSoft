@@ -47,6 +47,7 @@ export default function ReparacionesPage() {
     const queryClient = useQueryClient();
     const [isEditing, setIsEditing] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
+    const [dialogOpen, setDialogOpen] = useState(false);
 
     const form = useForm({
         resolver: zodResolver(insertReparacionSchema),
@@ -78,6 +79,7 @@ export default function ReparacionesPage() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["/api/reparaciones"] });
             form.reset();
+            setDialogOpen(false);
             toast({
                 title: "Reparación registrada",
                 description: "La reparación ha sido registrada exitosamente.",
@@ -93,6 +95,7 @@ export default function ReparacionesPage() {
             queryClient.invalidateQueries({ queryKey: ["/api/reparaciones"] });
             setIsEditing(false);
             setEditingId(null);
+            setDialogOpen(false);
             form.reset({
                 patente: "",
                 nombre: "",
@@ -182,16 +185,17 @@ export default function ReparacionesPage() {
                                 setIsEditing(true);
                                 setEditingId(reparacion.id);
                                 form.reset({
-                                    patente: "",
-                                    nombre: "",
-                                    apellido: "",
-                                    cantidadKm: 0,
-                                    fecha: "",
-                                    reparaciones: "",
-                                    observaciones: "",
-                                    foto: "",
-                                    costo: 0
+                                    patente: reparacion.patente ?? "",
+                                    nombre: reparacion.nombre ?? "",
+                                    apellido: reparacion.apellido ?? "",
+                                    cantidadKm: reparacion.cantidadKm ?? 0,
+                                    fecha: reparacion.fecha ?? "",
+                                    reparaciones: reparacion.reparaciones ?? "",
+                                    observaciones: reparacion.observaciones ?? "",
+                                    foto: reparacion.foto ?? "",
+                                    costo: reparacion.costo ?? 0
                                 });
+                                setDialogOpen(true);
                             }}
                         >
                             <Pencil className="h-4 w-4" />
@@ -231,181 +235,197 @@ export default function ReparacionesPage() {
                 <CardHeader>
                     <div className="flex items-center justify-between">
                         <CardTitle>Gestión de Reparaciones</CardTitle>
-                        <Dialog>
-                            <DialogTrigger asChild>
-                                <Button>
-                                    <Plus className="h-4 w-4 mr-2" />
-                                    Nueva Reparación
-                                </Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-h-[80vh] overflow-y-auto">
-                                <DialogHeader>
-                                    <DialogTitle>{isEditing ? "Editar Reparación" : "Nueva Reparación"}</DialogTitle>
-                                </DialogHeader>
-                                <Form {...form}>
-                                    <form
-                                        onSubmit={form.handleSubmit((data) => {
-                                            if (isEditing && editingId) {
-                                                updateMutation.mutate({ id: editingId, data });
-                                            } else {
-                                                createMutation.mutate(data);
-                                            }
-                                        })}
-                                        className="space-y-4"
-                                    >
-                                        <FormField
-                                            control={form.control}
-                                            name="patente"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Patente</FormLabel>
-                                                    <FormControl>
-                                                        <Input {...field} />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name="nombre"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Nombre</FormLabel>
-                                                    <FormControl>
-                                                        <Input {...field} />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name="apellido"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Apellido</FormLabel>
-                                                    <FormControl>
-                                                        <Input {...field} />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name="cantidadKm"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Kilómetros</FormLabel>
-                                                    <FormControl>
-                                                        <Input
-                                                            type="number"
-                                                            step="any"
-                                                            {...field}
-                                                            onChange={e => field.onChange(parseFloat(e.target.value))}
-                                                        />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name="fecha"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Fecha</FormLabel>
-                                                    <FormControl>
-                                                        <Input type="date" {...field} />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <FormField
-                                                control={form.control}
-                                                name="reparaciones"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel>Reparaciones</FormLabel>
-                                                        <FormControl>
-                                                            <Textarea {...field} />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                            <FormField
-                                                control={form.control}
-                                                name="costo"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel>Costo</FormLabel>
-                                                        <FormControl>
-                                                            <Input
-                                                                type="number"
-                                                                step="any"
-                                                                {...field}
-                                                                onChange={e => field.onChange(parseFloat(e.target.value))}
-                                                            />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                        </div>
-                                        <FormField
-                                            control={form.control}
-                                            name="observaciones"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Observaciones</FormLabel>
-                                                    <FormControl>
-                                                        <Textarea {...field} />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name="foto"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Foto</FormLabel>
-                                                    <FormControl>
-                                                        <Input
-                                                            type="file"
-                                                            accept="image/*"
-                                                            onChange={(e) => {
-                                                                const file = e.target.files?.[0];
-                                                                if (file) {
-                                                                    const reader = new FileReader();
-                                                                    reader.onloadend = () => {
-                                                                        field.onChange(reader.result);
-                                                                    };
-                                                                    reader.readAsDataURL(file);
-                                                                }
-                                                            }}
-                                                        />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <Button type="submit">{isEditing ? "Actualizar" : "Crear"}</Button>
-                                    </form>
-                                </Form>
-                            </DialogContent>
-                        </Dialog>
+                        <Button
+                            onClick={() => {
+                                setIsEditing(false);
+                                setEditingId(null);
+                                form.reset({
+                                    patente: "",
+                                    nombre: "",
+                                    apellido: "",
+                                    cantidadKm: 0,
+                                    fecha: "",
+                                    reparaciones: "",
+                                    observaciones: "",
+                                    foto: "",
+                                    costo: 0
+                                });
+                                setDialogOpen(true);
+                            }}
+                        >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Nueva Reparación
+                        </Button>
                     </div>
                 </CardHeader>
                 <CardContent>
                     <DataTable columns={columns} data={reparaciones} />
                 </CardContent>
             </Card>
+
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <DialogContent className="max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>{isEditing ? "Editar Reparación" : "Nueva Reparación"}</DialogTitle>
+                    </DialogHeader>
+                    <Form {...form}>
+                        <form
+                            onSubmit={form.handleSubmit((data) => {
+                                if (isEditing && editingId) {
+                                    updateMutation.mutate({ id: editingId, data });
+                                } else {
+                                    createMutation.mutate(data);
+                                }
+                            })}
+                            className="space-y-4"
+                        >
+                            <FormField
+                                control={form.control}
+                                name="patente"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Patente</FormLabel>
+                                        <FormControl>
+                                            <Input {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="nombre"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Nombre</FormLabel>
+                                        <FormControl>
+                                            <Input {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="apellido"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Apellido</FormLabel>
+                                        <FormControl>
+                                            <Input {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="cantidadKm"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Kilómetros</FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                type="number"
+                                                step="any"
+                                                {...field}
+                                                onChange={e => field.onChange(parseFloat(e.target.value))}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="fecha"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Fecha</FormLabel>
+                                        <FormControl>
+                                            <Input type="date" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <div className="grid grid-cols-2 gap-4">
+                                <FormField
+                                    control={form.control}
+                                    name="reparaciones"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Reparaciones</FormLabel>
+                                            <FormControl>
+                                                <Textarea {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="costo"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Costo</FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    type="number"
+                                                    step="any"
+                                                    {...field}
+                                                    onChange={e => field.onChange(parseFloat(e.target.value))}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
+                            <FormField
+                                control={form.control}
+                                name="observaciones"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Observaciones</FormLabel>
+                                        <FormControl>
+                                            <Textarea {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="foto"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Foto</FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) {
+                                                        const reader = new FileReader();
+                                                        reader.onloadend = () => {
+                                                            field.onChange(reader.result);
+                                                        };
+                                                        reader.readAsDataURL(file);
+                                                    }
+                                                }}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <Button type="submit">{isEditing ? "Actualizar" : "Crear"}</Button>
+                        </form>
+                    </Form>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

@@ -234,7 +234,7 @@ export default function ReparacionesPage() {
                                     Nueva Reparación
                                 </Button>
                             </DialogTrigger>
-                            <DialogContent>
+                            <DialogContent className="max-h-[80vh] overflow-y-auto">
                                 <DialogHeader>
                                     <DialogTitle>{isEditing ? "Editar Reparación" : "Nueva Reparación"}</DialogTitle>
                                 </DialogHeader>

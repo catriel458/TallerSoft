@@ -16,6 +16,11 @@ export const users = sqliteTable("users", {
   imagen: text("imagen"),
   nombreTaller: text("nombre_taller"),
   tema: text("tema").default("dark"),
+  tipoUsuario: text("tipo_usuario").notNull(), // Cliente o negocio
+  patenteActual: text("patente_actual"),
+  imagenAuto: text("imagen_auto"),
+  Apyn: text("Apyn"),
+  direccion: text("direccion"),
 });
 
 export const turnos = sqliteTable("turnos", {
@@ -27,13 +32,24 @@ export const turnos = sqliteTable("turnos", {
   asistencia: text("asistencia").notNull(),
 });
 
-export const costos = sqliteTable("costos", {
+export const reparaciones = sqliteTable("reparaciones", {
   id: integer("id").primaryKey().notNull(),
   costo: real("costo").notNull(),
   fecha: text("fecha").notNull(),
   observaciones: text("observaciones"),
   nombre: text("nombre").notNull(),
   apellido: text("apellido").notNull(),
+  patente: text("patente").notNull(),
+  reparaciones: text("reparaciones"),
+  cantidadKm: integer("cantidad_km"),
+  foto: text("foto"),
+});
+
+export const historialPatentes = sqliteTable("historial_patentes", {
+  id: integer("id").primaryKey().notNull(),
+  userId: integer("user_id").notNull(),
+  patente: text("patente").notNull(),
+  fechaCambio: text("fecha_cambio").notNull(),
 });
 
 export const insertUserSchema = createInsertSchema(users)
@@ -48,25 +64,7 @@ export const insertUserSchema = createInsertSchema(users)
     username: z.string().min(3, "Username must be at least 3 characters"),
   });
 
-export const insertTurnoSchema = z.object({
-  fecha: z.string().min(1, "La fecha es requerida"),
-  horario: z.string().min(1, "El horario es requerido"),
-  nombreCliente: z.string().min(3, "El nombre del cliente debe tener al menos 3 caracteres"),
-  observaciones: z.string().optional(),
-  asistencia: z.enum(["Presente", "Ausente", "Pendiente"]).default("Pendiente"),
-});
-
-export const insertCostoSchema = z.object({
-  costo: z.number().positive("El costo debe ser positivo"),
-  fecha: z.string().min(1, "La fecha es requerida"),
-  observaciones: z.string().optional(),
-  nombre: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
-  apellido: z.string().min(2, "El apellido debe tener al menos 2 caracteres"),
-});
-
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
-export type InsertTurno = z.infer<typeof insertTurnoSchema>;
-export type Turno = typeof turnos.$inferSelect;
-export type InsertCosto = z.infer<typeof insertCostoSchema>;
-export type Costo = typeof costos.$inferSelect;
+export type Reparacion = typeof reparaciones.$inferSelect;
+export type HistorialPatente = typeof historialPatentes.$inferSelect;

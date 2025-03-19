@@ -1,4 +1,4 @@
-import { users, turnos, costos, type User, type InsertUser, type Turno, type InsertTurno, type Costo, type InsertCosto } from "@shared/schema";
+import { users, turnos, reparaciones, type User, type InsertUser, type Turno, type InsertTurno, type Reparacion, type InsertReparacion } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { randomBytes } from "crypto";
 import { drizzle } from "drizzle-orm/better-sqlite3";
@@ -10,7 +10,7 @@ const db = drizzle(sqlite);
 
 export interface IStorage {
   getTurnos(): Promise<Turno[]>;
-  getCostos(): Promise<Costo[]>;
+  getReparaciones(): Promise<Reparacion[]>;
 
   // User operations
   createUser(user: InsertUser): Promise<User>;
@@ -22,6 +22,11 @@ export interface IStorage {
   updateUserPassword(id: number, hashedPassword: string): Promise<boolean>;
   setResetToken(email: string): Promise<string | undefined>;
   resetPassword(token: string, newPassword: string): Promise<boolean>;
+
+  // Reparaciones operations
+  createReparacion(reparacion: InsertReparacion): Promise<Reparacion>;
+  updateReparacion(id: number, data: InsertReparacion): Promise<Reparacion | undefined>;
+  deleteReparacion(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -29,8 +34,8 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(turnos);
   }
 
-  async getCostos(): Promise<Costo[]> {
-    return await db.select().from(costos);
+  async getReparaciones(): Promise<Reparacion[]> {
+    return await db.select().from(reparaciones);
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
@@ -125,10 +130,10 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  async createCosto(insertCosto: InsertCosto): Promise<Costo> {
+  async createReparacion(insertReparacion: InsertReparacion): Promise<Reparacion> {
     const result = await db
-      .insert(costos)
-      .values(insertCosto)
+      .insert(reparaciones)
+      .values(insertReparacion)
       .returning();
     return result[0];
   }
@@ -142,11 +147,11 @@ export class DatabaseStorage implements IStorage {
     return result.length > 0 ? result[0] : undefined;
   }
 
-  async updateCosto(id: number, data: InsertCosto): Promise<Costo | undefined> {
+  async updateReparacion(id: number, data: InsertReparacion): Promise<Reparacion | undefined> {
     const result = await db
-      .update(costos)
+      .update(reparaciones)
       .set(data)
-      .where(eq(costos.id, id))
+      .where(eq(reparaciones.id, id))
       .returning();
     return result.length > 0 ? result[0] : undefined;
   }
@@ -159,10 +164,10 @@ export class DatabaseStorage implements IStorage {
     return result.length > 0;
   }
 
-  async deleteCosto(id: number): Promise<boolean> {
+  async deleteReparacion(id: number): Promise<boolean> {
     const result = await db
-      .delete(costos)
-      .where(eq(costos.id, id))
+      .delete(reparaciones)
+      .where(eq(reparaciones.id, id))
       .returning();
     return result.length > 0;
   }

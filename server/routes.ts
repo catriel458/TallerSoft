@@ -3,7 +3,7 @@ import type { SessionData } from "express-session";
 import session from "express-session";
 import { createServer } from "http";
 import { storage } from "./storage";
-import { insertTurnoSchema, insertCostoSchema } from "@shared/schema";
+import { insertTurnoSchema, insertReparacionSchema } from "@shared/schema";
 
 declare module "express-session" {
   interface SessionData {
@@ -36,9 +36,9 @@ export function registerRoutes(app: Express) {
     res.json(turnos);
   });
 
-  app.get("/api/costos", async (_req, res) => {
-    const costos = await storage.getCostos();
-    res.json(costos);
+  app.get("/api/reparaciones", async (_req, res) => {
+    const reparaciones = await storage.getReparaciones();
+    res.json(reparaciones);
   });
 
   app.post("/api/turnos", async (req, res) => {
@@ -54,14 +54,14 @@ export function registerRoutes(app: Express) {
     }
   });
 
-  app.post("/api/costos", async (req, res) => {
+  app.post("/api/reparaciones", async (req, res) => {
     try {
-      const result = insertCostoSchema.safeParse(req.body);
+      const result = insertReparacionSchema.safeParse(req.body);
       if (!result.success) {
         return res.status(400).json(result.error);
       }
-      const costo = await storage.createCosto(result.data);
-      res.json(costo);
+      const reparacion = await storage.createReparacion(result.data);
+      res.json(reparacion);
     } catch (error) {
       res.status(500).json({ error: "Internal server error" });
     }
@@ -95,27 +95,27 @@ export function registerRoutes(app: Express) {
     }
   });
 
-  app.put("/api/costos/:id", async (req, res) => {
+  app.put("/api/reparaciones/:id", async (req, res) => {
     try {
-      const result = insertCostoSchema.safeParse(req.body);
+      const result = insertReparacionSchema.safeParse(req.body);
       if (!result.success) {
         return res.status(400).json(result.error);
       }
-      const costo = await storage.updateCosto(Number(req.params.id), result.data);
-      if (!costo) {
-        return res.status(404).json({ error: "Costo not found" });
+      const reparacion = await storage.updateReparacion(Number(req.params.id), result.data);
+      if (!reparacion) {
+        return res.status(404).json({ error: "Reparacion not found" });
       }
-      res.json(costo);
+      res.json(reparacion);
     } catch (error) {
       res.status(500).json({ error: "Internal server error" });
     }
   });
 
-  app.delete("/api/costos/:id", async (req, res) => {
+  app.delete("/api/reparaciones/:id", async (req, res) => {
     try {
-      const success = await storage.deleteCosto(Number(req.params.id));
+      const success = await storage.deleteReparacion(Number(req.params.id));
       if (!success) {
-        return res.status(404).json({ error: "Costo not found" });
+        return res.status(404).json({ error: "Reparacion not found" });
       }
       res.status(204).end();
     } catch (error) {

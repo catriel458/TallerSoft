@@ -64,7 +64,13 @@ export const insertUserSchema = createInsertSchema(users)
     username: z.string().min(3, "Username must be at least 3 characters"),
   });
 
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
+export const insertTurnoSchema = createInsertSchema(turnos);
+export const insertReparacionSchema = createInsertSchema(reparaciones);
+
+export type Turno = typeof turnos.$inferSelect;
+export type InsertTurno = typeof turnos.$inferInsert;
 export type Reparacion = typeof reparaciones.$inferSelect;
+export type InsertReparacion = typeof reparaciones.$inferInsert;
 export type HistorialPatente = typeof historialPatentes.$inferSelect;
+export type User = typeof users.$inferSelect;
+export type InsertUser = typeof users.$inferInsert;

@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertCostoSchema, type Costo } from "@shared/schema";
+import { type Reparacion, reparaciones } from "@shared/schema";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DataTable } from "@/components/ui/data-table";
 import { ColumnDef } from "@tanstack/react-table";
@@ -14,6 +14,8 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Plus, Pencil, Trash2 } from "lucide-react";
+import { createInsertSchema } from "drizzle-zod";
+import { z } from "zod";
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
 
@@ -38,78 +40,94 @@ const apiRequest = async (method: HttpMethod, url: string, data?: any) => {
     return response;
 };
 
-export default function CostosPage() {
+const insertReparacionSchema = createInsertSchema(reparaciones);
+
+export default function ReparacionesPage() {
     const { toast } = useToast();
     const queryClient = useQueryClient();
     const [isEditing, setIsEditing] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
 
     const form = useForm({
-        resolver: zodResolver(insertCostoSchema),
+        resolver: zodResolver(insertReparacionSchema),
         defaultValues: {
-            fecha: "",
+            patente: "",
             nombre: "",
             apellido: "",
-            costo: 0,
+            cantidadKm: 0,
+            fecha: "",
+            reparaciones: "",
             observaciones: "",
+            foto: "",
+            costo: 0
         },
     });
 
-    const { data: costos = [], isLoading } = useQuery<Costo[]>({
-        queryKey: ["/api/costos"],
+    const { data: reparaciones = [], isLoading } = useQuery<Reparacion[]>({
+        queryKey: ["/api/reparaciones"],
         queryFn: async () => {
-            const response = await apiRequest("GET", "/api/costos");
+            const response = await apiRequest("GET", "/api/reparaciones");
             return response.json();
         },
     });
 
     const createMutation = useMutation({
-        mutationFn: async (data: typeof form.getValues) => {
-            await apiRequest("POST", "/api/costos", data);
+        mutationFn: async (data: z.infer<typeof insertReparacionSchema>) => {
+            await apiRequest("POST", "/api/reparaciones", data);
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["/api/costos"] });
+            queryClient.invalidateQueries({ queryKey: ["/api/reparaciones"] });
             form.reset();
             toast({
-                title: "Costo registrado",
-                description: "El costo ha sido registrado exitosamente.",
+                title: "Reparación registrada",
+                description: "La reparación ha sido registrada exitosamente.",
             });
         },
     });
 
     const updateMutation = useMutation({
-        mutationFn: async ({ id, data }: { id: number; data: typeof form.getValues }) => {
-            await apiRequest("PUT", `/api/costos/${id}`, data);
+        mutationFn: async ({ id, data }: { id: number; data: z.infer<typeof insertReparacionSchema> }) => {
+            await apiRequest("PUT", `/api/reparaciones/${id}`, data);
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["/api/costos"] });
+            queryClient.invalidateQueries({ queryKey: ["/api/reparaciones"] });
             setIsEditing(false);
             setEditingId(null);
-            form.reset();
+            form.reset({
+                patente: "",
+                nombre: "",
+                apellido: "",
+                cantidadKm: 0,
+                fecha: "",
+                reparaciones: "",
+                observaciones: "",
+                foto: "",
+                costo: 0
+            });
             toast({
-                title: "Costo actualizado",
-                description: "El costo ha sido modificado exitosamente.",
+                title: "Reparación actualizada",
+                description: "La reparación ha sido modificada exitosamente.",
             });
         },
     });
 
     const deleteMutation = useMutation({
         mutationFn: async (id: number) => {
-            await apiRequest("DELETE", `/api/costos/${id}`);
+            await apiRequest("DELETE", `/api/reparaciones/${id}`);
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["/api/costos"] });
+            queryClient.invalidateQueries({ queryKey: ["/api/reparaciones"] });
             toast({
-                title: "Costo eliminado",
-                description: "El costo ha sido eliminado exitosamente.",
+                title: "Reparación eliminada",
+                description: "La reparación ha sido eliminada exitosamente.",
             });
         },
     });
 
-    const columns: ColumnDef<Costo>[] = [
+    const columns: ColumnDef<Reparacion>[] = [
         {
-            accessorKey: "fecha",
-            header: "Fecha",
+            accessorKey: "patente",
+            header: "Patente",
         },
         {
             accessorKey: "nombre",
@@ -120,14 +138,37 @@ export default function CostosPage() {
             header: "Apellido",
         },
         {
-            accessorKey: "costo",
-            header: "Costo",
-            cell: ({ row }) => `$${row.original.costo.toFixed(2)}`,
+            accessorKey: "cantidadKm",
+            header: "Kilómetros",
+        },
+        {
+            accessorKey: "fecha",
+            header: "Fecha",
+        },
+        {
+            accessorKey: "reparaciones",
+            header: "Reparaciones",
+        },
+        {
+            accessorKey: "observaciones",
+            header: "Observaciones",
+        },
+        {
+            accessorKey: "foto",
+            header: "Foto",
+            cell: ({ row }) => (
+                row.original.foto ?
+                    <img
+                        src={row.original.foto}
+                        alt="Foto reparación"
+                        className="w-16 h-16 object-cover rounded"
+                    /> : null
+            ),
         },
         {
             id: "actions",
             cell: ({ row }) => {
-                const costo = row.original;
+                const reparacion = row.original;
                 return (
                     <div className="flex items-center gap-2">
                         <Button
@@ -135,8 +176,18 @@ export default function CostosPage() {
                             size="icon"
                             onClick={() => {
                                 setIsEditing(true);
-                                setEditingId(costo.id);
-                                form.reset(costo);
+                                setEditingId(reparacion.id);
+                                form.reset({
+                                    patente: "",
+                                    nombre: "",
+                                    apellido: "",
+                                    cantidadKm: 0,
+                                    fecha: "",
+                                    reparaciones: "",
+                                    observaciones: "",
+                                    foto: "",
+                                    costo: 0
+                                });
                             }}
                         >
                             <Pencil className="h-4 w-4" />
@@ -157,7 +208,7 @@ export default function CostosPage() {
                                 <AlertDialogFooter>
                                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
                                     <AlertDialogAction
-                                        onClick={() => deleteMutation.mutate(costo.id)}
+                                        onClick={() => deleteMutation.mutate(reparacion.id)}
                                     >
                                         Eliminar
                                     </AlertDialogAction>
@@ -175,17 +226,17 @@ export default function CostosPage() {
             <Card>
                 <CardHeader>
                     <div className="flex items-center justify-between">
-                        <CardTitle>Gestión de Costos</CardTitle>
+                        <CardTitle>Gestión de Reparaciones</CardTitle>
                         <Dialog>
                             <DialogTrigger asChild>
                                 <Button>
                                     <Plus className="h-4 w-4 mr-2" />
-                                    Nuevo Costo
+                                    Nueva Reparación
                                 </Button>
                             </DialogTrigger>
                             <DialogContent>
                                 <DialogHeader>
-                                    <DialogTitle>{isEditing ? "Editar Costo" : "Nuevo Costo"}</DialogTitle>
+                                    <DialogTitle>{isEditing ? "Editar Reparación" : "Nueva Reparación"}</DialogTitle>
                                 </DialogHeader>
                                 <Form {...form}>
                                     <form
@@ -200,12 +251,12 @@ export default function CostosPage() {
                                     >
                                         <FormField
                                             control={form.control}
-                                            name="fecha"
+                                            name="patente"
                                             render={({ field }) => (
                                                 <FormItem>
-                                                    <FormLabel>Fecha</FormLabel>
+                                                    <FormLabel>Patente</FormLabel>
                                                     <FormControl>
-                                                        <Input type="date" {...field} />
+                                                        <Input {...field} />
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
@@ -239,17 +290,38 @@ export default function CostosPage() {
                                         />
                                         <FormField
                                             control={form.control}
-                                            name="costo"
+                                            name="cantidadKm"
                                             render={({ field }) => (
                                                 <FormItem>
-                                                    <FormLabel>Costo</FormLabel>
+                                                    <FormLabel>Kilómetros</FormLabel>
                                                     <FormControl>
-                                                        <Input
-                                                            type="number"
-                                                            step="0.01"
-                                                            {...field}
-                                                            onChange={(e) => field.onChange(parseFloat(e.target.value))}
-                                                        />
+                                                        <Input type="number" {...field} onChange={e => field.onChange(+e.target.value)} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={form.control}
+                                            name="fecha"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Fecha</FormLabel>
+                                                    <FormControl>
+                                                        <Input type="date" {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={form.control}
+                                            name="reparaciones"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Reparaciones</FormLabel>
+                                                    <FormControl>
+                                                        <Textarea {...field} />
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
@@ -268,9 +340,46 @@ export default function CostosPage() {
                                                 </FormItem>
                                             )}
                                         />
-                                        <Button type="submit" className="w-full">
-                                            {isEditing ? "Guardar Cambios" : "Crear Costo"}
-                                        </Button>
+                                        <FormField
+                                            control={form.control}
+                                            name="costo"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Costo</FormLabel>
+                                                    <FormControl>
+                                                        <Input type="number" {...field} onChange={e => field.onChange(+e.target.value)} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={form.control}
+                                            name="foto"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Foto</FormLabel>
+                                                    <FormControl>
+                                                        <Input
+                                                            type="file"
+                                                            accept="image/*"
+                                                            onChange={(e) => {
+                                                                const file = e.target.files?.[0];
+                                                                if (file) {
+                                                                    const reader = new FileReader();
+                                                                    reader.onloadend = () => {
+                                                                        field.onChange(reader.result);
+                                                                    };
+                                                                    reader.readAsDataURL(file);
+                                                                }
+                                                            }}
+                                                        />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <Button type="submit">{isEditing ? "Actualizar" : "Crear"}</Button>
                                     </form>
                                 </Form>
                             </DialogContent>
@@ -278,11 +387,7 @@ export default function CostosPage() {
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <DataTable
-                        columns={columns}
-                        data={costos}
-                        isLoading={isLoading}
-                    />
+                    <DataTable columns={columns} data={reparaciones} />
                 </CardContent>
             </Card>
         </div>

@@ -37,10 +37,10 @@ export default function Header() {
         </Button>
       </Link>
 
-      <Link href="/costos">
+      <Link href="/reparaciones">
         <Button variant="ghost" className="gap-2 text-white dark:text-white hover:text-primary dark:hover:text-primary">
           <DollarSign className="h-4 w-4" />
-          Costos
+          Reparaciones
         </Button>
       </Link>
 
@@ -130,10 +130,10 @@ const MobileMenu = () => {
             </Button>
           </Link>
 
-          <Link href="/costos">
+          <Link href="/reparaciones">
             <Button variant="ghost" className="w-full justify-start gap-2">
               <DollarSign className="h-4 w-4" />
-              Costos
+              Reparaciones
             </Button>
           </Link>
 

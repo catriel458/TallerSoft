@@ -13,7 +13,7 @@ import { ProtectedRoute } from "@/components/protected-route";
 import { lazy, Suspense } from "react";
 
 const TurnosPage = lazy(() => import("@/pages/turnos"));
-const CostosPage = lazy(() => import("@/pages/costos"));
+const ReparacionesPage = lazy(() => import("@/pages/reparaciones"));
 
 function Router() {
   return (
@@ -25,7 +25,7 @@ function Router() {
         <Route path="/reset-password" component={ResetPassword} />
         <ProtectedRoute path="/profile" component={ProfilePage} />
         <ProtectedRoute path="/turnos" component={TurnosPage} />
-        <ProtectedRoute path="/costos" component={CostosPage} />
+        <ProtectedRoute path="/reparaciones" component={ReparacionesPage} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>

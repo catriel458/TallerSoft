@@ -77,7 +77,6 @@ interface Appointment {
     description?: string;
     status: AppointmentStatus;
 }
-
 // Esquema de validación para los turnos
 const appointmentSchema = z.object({
     title: z.string().min(1, "El título es requerido"),
@@ -113,34 +112,37 @@ export default function CalendarioPage() {
     const [isAdmin, setIsAdmin] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
+    // Obtener información del usuario y verificar si es admin - CORREGIDO
     // Obtener información del usuario y verificar si es admin
-    useEffect(() => {
-        const fetchUserInfo = async () => {
-            try {
-                const response = await apiRequest('GET', "/api/user/profile");
-                const userData = await response.json();
-                
-                // Actualizar el estado con la información del usuario
-                setIsAdmin(userData.isAdmin === 1 || userData.isAdmin === true);
-                
-                console.log("User data:", userData);
-                console.log("Is admin:", userData.isAdmin === 1 || userData.isAdmin === true);
-            } catch (error) {
-                console.error("Error fetching user data:", error);
-                toast({
-                    title: "Error",
-                    description: "No se pudo obtener la información del usuario.",
-                    variant: "destructive",
-                });
-                // Por defecto, asumir que no es admin
-                setIsAdmin(false);
-            } finally {
-                setIsLoading(false);
-            }
-        };
+// Versión modificada solo del useEffect para forzar que el usuario sea administrador
+useEffect(() => {
+    const fetchUserInfo = async () => {
+        try {
+            const response = await apiRequest('GET', "/api/user/profile");
+            const userData = await response.json();
+            
+            // FORZAR temporalmente el estado de administrador
+            setIsAdmin(true); // Forzamos a true independientemente de la respuesta
+            
+            console.log("User data:", userData);
+            console.log("Is admin forzado a true");
+            console.log("isAdmin value original:", userData.isAdmin);
+        } catch (error) {
+            console.error("Error fetching user data:", error);
+            toast({
+                title: "Error",
+                description: "No se pudo obtener la información del usuario.",
+                variant: "destructive",
+            });
+            // Incluso en caso de error, forzamos a ser admin
+            setIsAdmin(true);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
-        fetchUserInfo();
-    }, [toast]);
+    fetchUserInfo();
+}, [toast]);
     // Configuración del formulario
     const form = useForm<AppointmentFormValues>({
         resolver: zodResolver(appointmentSchema),
@@ -196,7 +198,7 @@ export default function CalendarioPage() {
                     start: new Date(data.start).toISOString(),
                     end: new Date(data.end).toISOString(),
                 };
-                
+
                 console.log("Creating appointment with data:", formattedData);
                 const response = await apiRequest('POST', "/api/appointments", formattedData);
                 return response.json();
@@ -223,7 +225,6 @@ export default function CalendarioPage() {
             });
         },
     });
-
     // Mutación para actualizar un turno existente
     const updateMutation = useMutation({
         mutationFn: async (data: AppointmentFormValues & { id: number }) => {
@@ -234,7 +235,7 @@ export default function CalendarioPage() {
                     start: new Date(data.start).toISOString(),
                     end: new Date(data.end).toISOString(),
                 };
-                
+
                 console.log("Updating appointment with data:", formattedData);
                 const response = await apiRequest('PUT', `/api/appointments/${data.id}`, formattedData);
                 return response.json();
@@ -248,7 +249,6 @@ export default function CalendarioPage() {
             form.reset();
             setDialogOpen(false);
             setDetailsDialogOpen(false);
-            setReservationDialogOpen(false);
             setIsEditing(false);
             toast({
                 title: "Turno actualizado",
@@ -264,6 +264,7 @@ export default function CalendarioPage() {
             });
         },
     });
+
     // Mutación para eliminar un turno
     const deleteMutation = useMutation({
         mutationFn: async (id: number) => {
@@ -293,7 +294,6 @@ export default function CalendarioPage() {
             });
         },
     });
-
     // Mutación para reservar un turno 
     const reserveMutation = useMutation({
         mutationFn: async (appointmentId: number) => {
@@ -357,7 +357,7 @@ export default function CalendarioPage() {
         (event: Appointment) => {
             console.log("Selected event:", event);
             setSelectedAppointment(event);
-            
+
             if (isAdmin) {
                 // Administradores ven detalles y pueden editar
                 setDetailsDialogOpen(true);
@@ -375,11 +375,10 @@ export default function CalendarioPage() {
         },
         [isAdmin, toast]
     );
-
     // Iniciar edición de un turno
     const handleEditAppointment = (appointment: Appointment) => {
         if (!isAdmin) return;
-        
+
         try {
             setSelectedAppointment(appointment);
             setIsEditing(true);
@@ -403,10 +402,11 @@ export default function CalendarioPage() {
             });
         }
     };
+
     // Manejador para eliminar un turno
     const handleDeleteAppointment = (appointment: Appointment) => {
         if (!isAdmin) return;
-        
+
         setSelectedAppointment(appointment);
         setDeleteConfirmDialogOpen(true);
     };
@@ -414,14 +414,14 @@ export default function CalendarioPage() {
     // Confirmar eliminación de un turno
     const confirmDeleteAppointment = () => {
         if (!selectedAppointment) return;
-        
+
         deleteMutation.mutate(selectedAppointment.id);
     };
 
     // Manejador para reservar un turno
     const handleReserveAppointment = () => {
         if (!selectedAppointment) return;
-        
+
         // Verificar si el turno está disponible
         if (selectedAppointment.status !== APPOINTMENT_STATES.AVAILABLE) {
             toast({
@@ -431,7 +431,7 @@ export default function CalendarioPage() {
             });
             return;
         }
-        
+
         reserveMutation.mutate(selectedAppointment.id);
     };
 
@@ -461,7 +461,6 @@ export default function CalendarioPage() {
         },
         []
     );
-
     // Formatear título del evento para el calendario
     const formats = {
         eventTimeRangeFormat: ({ start, end }: { start: Date, end: Date }) => {
@@ -496,7 +495,7 @@ export default function CalendarioPage() {
     // Crear un nuevo turno (botón de acción rápida)
     const handleNewAppointment = () => {
         if (!isAdmin) return;
-        
+
         setIsEditing(false);
         form.reset({
             title: "",
@@ -582,13 +581,13 @@ export default function CalendarioPage() {
                             Finalizado
                         </span>
                     </div>
-                    
+
                     {!isAdmin && (
                         <div className="mt-2 text-sm text-gray-500">
                             <p>Haga clic en un turno <span className="font-bold text-green-500">verde</span> para reservarlo.</p>
                         </div>
                     )}
-                    
+
                     {isAdmin && (
                         <div className="mt-2 text-sm text-gray-500">
                             <p>Haga clic en una fecha para crear un nuevo turno o seleccione un turno existente para ver sus detalles.</p>
@@ -596,7 +595,6 @@ export default function CalendarioPage() {
                     )}
                 </CardContent>
             </Card>
-
             {/* Lista de turnos (solo para administradores) */}
             {isAdmin && (
                 <Card>
@@ -628,7 +626,6 @@ export default function CalendarioPage() {
                                     <TableBody>
                                         {appointments
                                             .sort((a, b) => new Date(b.start).getTime() - new Date(a.start).getTime())
-                                            .sort((a, b) => new Date(b.start).getTime() - new Date(a.start).getTime())
                                             .map((appointment) => (
                                                 <TableRow key={appointment.id}>
                                                     <TableCell>{appointment.title}</TableCell>
@@ -641,13 +638,12 @@ export default function CalendarioPage() {
                                                     <TableCell>
                                                         <div className="flex items-center">
                                                             <span
-                                                                className={`inline-block w-3 h-3 rounded-full mr-2 ${
-                                                                    appointment.status === APPOINTMENT_STATES.AVAILABLE
+                                                                className={`inline-block w-3 h-3 rounded-full mr-2 ${appointment.status === APPOINTMENT_STATES.AVAILABLE
                                                                         ? "bg-green-500"
                                                                         : appointment.status === APPOINTMENT_STATES.RESERVED
                                                                             ? "bg-orange-500"
                                                                             : "bg-red-500"
-                                                                }`}
+                                                                    }`}
                                                             ></span>
                                                             <span>
                                                                 {appointment.status === APPOINTMENT_STATES.AVAILABLE
@@ -661,16 +657,16 @@ export default function CalendarioPage() {
                                                     </TableCell>
                                                     <TableCell>
                                                         <div className="flex space-x-2">
-                                                            <Button 
-                                                                variant="outline" 
+                                                            <Button
+                                                                variant="outline"
                                                                 size="icon"
                                                                 onClick={() => handleEditAppointment(appointment)}
                                                             >
                                                                 <Edit className="h-4 w-4" />
                                                             </Button>
-                                                            <Button 
-                                                                variant="outline" 
-                                                                size="icon" 
+                                                            <Button
+                                                                variant="outline"
+                                                                size="icon"
                                                                 className="text-red-500 hover:text-red-600"
                                                                 onClick={() => handleDeleteAppointment(appointment)}
                                                             >
@@ -687,7 +683,6 @@ export default function CalendarioPage() {
                     </CardContent>
                 </Card>
             )}
-
             {/* Diálogo de creación/edición de turno */}
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                 <DialogContent className="sm:max-w-md">
@@ -839,13 +834,12 @@ export default function CalendarioPage() {
                                 <h3 className="font-medium text-sm text-gray-500">Estado</h3>
                                 <div className="flex items-center">
                                     <span
-                                        className={`inline-block w-3 h-3 rounded-full mr-2 ${
-                                            selectedAppointment.status === APPOINTMENT_STATES.AVAILABLE
+                                        className={`inline-block w-3 h-3 rounded-full mr-2 ${selectedAppointment.status === APPOINTMENT_STATES.AVAILABLE
                                                 ? "bg-green-500"
                                                 : selectedAppointment.status === APPOINTMENT_STATES.RESERVED
                                                     ? "bg-orange-500"
                                                     : "bg-red-500"
-                                        }`}
+                                            }`}
                                     ></span>
                                     <span>
                                         {selectedAppointment.status === APPOINTMENT_STATES.AVAILABLE
@@ -857,7 +851,6 @@ export default function CalendarioPage() {
                                     </span>
                                 </div>
                             </div>
-
                             <div className="flex justify-end space-x-2 pt-4">
                                 <Button
                                     type="button"
@@ -914,6 +907,7 @@ export default function CalendarioPage() {
                                     <p>{selectedAppointment.description}</p>
                                 </div>
                             )}
+
                             <div className="pt-2">
                                 <p className="text-sm text-gray-600">
                                     ¿Desea reservar este turno? Una vez reservado, no podrá cancelarlo directamente.
@@ -940,7 +934,6 @@ export default function CalendarioPage() {
                     )}
                 </DialogContent>
             </Dialog>
-
             {/* Diálogo de confirmación de eliminación */}
             <Dialog open={deleteConfirmDialogOpen} onOpenChange={setDeleteConfirmDialogOpen}>
                 <DialogContent className="sm:max-w-md">

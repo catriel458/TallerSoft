@@ -14,6 +14,7 @@ import { lazy, Suspense } from "react";
 
 const TurnosPage = lazy(() => import("@/pages/turnos"));
 const ReparacionesPage = lazy(() => import("@/pages/reparaciones"));
+const CalendarioPage = lazy(() => import("@/pages/calendario"));
 
 function Router() {
   return (
@@ -26,6 +27,7 @@ function Router() {
         <ProtectedRoute path="/profile" component={ProfilePage} />
         <ProtectedRoute path="/turnos" component={TurnosPage} />
         <ProtectedRoute path="/reparaciones" component={ReparacionesPage} />
+        <ProtectedRoute path="/calendario" component={CalendarioPage} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>

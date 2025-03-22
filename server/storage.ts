@@ -6,7 +6,7 @@ import Database from "better-sqlite3";
 
 // Configurar conexión a SQLite
 const sqlite = new Database("./data/database.sqlite");
-const db = drizzle(sqlite);
+export const db = drizzle(sqlite);
 
 export interface IStorage {
   getTurnos(): Promise<Turno[]>;

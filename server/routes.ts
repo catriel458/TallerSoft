@@ -4,6 +4,7 @@ import session from "express-session";
 import { createServer } from "http";
 import { storage } from "./storage";
 import { insertTurnoSchema, insertReparacionSchema } from "@shared/schema";
+import appointmentsRouter from "./routes/appointments";
 
 declare module "express-session" {
   interface SessionData {
@@ -31,6 +32,7 @@ app.use((req, _res, next) => {
 });
 
 export function registerRoutes(app: Express) {
+  app.use("/api/appointments", appointmentsRouter);
   app.get("/api/turnos", async (_req, res) => {
     const turnos = await storage.getTurnos();
     res.json(turnos);

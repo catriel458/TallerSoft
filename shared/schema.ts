@@ -52,6 +52,16 @@ export const historialPatentes = sqliteTable("historial_patentes", {
   fechaCambio: text("fecha_cambio").notNull(),
 });
 
+export const appointments = sqliteTable("appointments", {
+  id: integer("id").primaryKey().notNull(),
+  title: text("title").notNull(),
+  start: text("start").notNull(),
+  end: text("end").notNull(),
+  description: text("description"),
+  isAvailable: integer("is_available", { mode: "boolean" }).default(true),
+  status: text("status").default("sin_tomar"),
+});
+
 export const insertUserSchema = createInsertSchema(users)
   .pick({
     username: true,
@@ -74,3 +84,5 @@ export type InsertReparacion = typeof reparaciones.$inferInsert;
 export type HistorialPatente = typeof historialPatentes.$inferSelect;
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
+export type Appointment = typeof appointments.$inferSelect;
+export type InsertAppointment = typeof appointments.$inferInsert;

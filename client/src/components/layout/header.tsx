@@ -30,6 +30,13 @@ export default function Header() {
 
       <div className="flex-1" />
 
+      <Link href="/calendario">
+        <Button variant="ghost" className="gap-2 text-white dark:text-white hover:text-primary dark:hover:text-primary">
+          <Calendar className="h-4 w-4" />
+          Calendario
+        </Button>
+      </Link>
+
       <Link href="/turnos">
         <Button variant="ghost" className="gap-2 text-white dark:text-white hover:text-primary dark:hover:text-primary">
           <Calendar className="h-4 w-4" />
@@ -123,6 +130,13 @@ const MobileMenu = () => {
       </SheetTrigger>
       <SheetContent side="left">
         <div className="flex flex-col space-y-4">
+          <Link href="/calendario">
+            <Button variant="ghost" className="w-full justify-start gap-2">
+              <Calendar className="h-4 w-4" />
+              Calendario
+            </Button>
+          </Link>
+
           <Link href="/turnos">
             <Button variant="ghost" className="w-full justify-start gap-2">
               <Calendar className="h-4 w-4" />

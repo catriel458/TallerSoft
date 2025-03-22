@@ -1,23 +1,12 @@
-import { Router } from "express";
+import { Router, Request, Response } from "express";
 import { db } from "../storage";
 import { appointments } from "@shared/schema";
 import { eq } from "drizzle-orm";
 
 const router = Router();
 
-// Middleware para verificar autenticación y tipo de usuario
-const checkUserType = (allowedTypes) => (req, res, next) => {
-    if (!req.user) {
-        return res.status(401).json({ error: "No autorizado" });
-    }
-    if (!allowedTypes.includes(req.user.tipoUsuario)) {
-        return res.status(403).json({ error: "No tiene permisos para esta operación" });
-    }
-    next();
-};
-
-// Get all appointments
-router.get("/", async (req, res) => {
+// Get all appointments (accesible para todos)
+router.get("/", async (req: Request, res: Response) => {
     try {
         const allAppointments = await db.select().from(appointments);
         res.json(allAppointments);
@@ -27,8 +16,8 @@ router.get("/", async (req, res) => {
     }
 });
 
-// Create new appointment (solo negocio)
-router.post("/", checkUserType(["negocio"]), async (req, res) => {
+// Create new appointment
+router.post("/", async (req: Request, res: Response) => {
     try {
         const { title, start, end, description, status } = req.body;
         const [appointment] = await db.insert(appointments).values({
@@ -45,8 +34,8 @@ router.post("/", checkUserType(["negocio"]), async (req, res) => {
     }
 });
 
-// Update appointment (solo negocio)
-router.put("/:id", checkUserType(["negocio"]), async (req, res) => {
+// Update appointment
+router.put("/:id", async (req: Request, res: Response) => {
     try {
         const id = parseInt(req.params.id);
         const { title, start, end, description, status } = req.body;
@@ -62,8 +51,8 @@ router.put("/:id", checkUserType(["negocio"]), async (req, res) => {
     }
 });
 
-// Delete appointment (solo negocio)
-router.delete("/:id", checkUserType(["negocio"]), async (req, res) => {
+// Delete appointment
+router.delete("/:id", async (req: Request, res: Response) => {
     try {
         const id = parseInt(req.params.id);
         await db.delete(appointments).where(eq(appointments.id, id));
@@ -74,8 +63,8 @@ router.delete("/:id", checkUserType(["negocio"]), async (req, res) => {
     }
 });
 
-// Reservar turno (solo cliente)
-router.put("/reserve/:id", checkUserType(["cliente"]), async (req, res) => {
+// Reservar turno (sin restricciones)
+router.put("/reserve/:id", async (req: Request, res: Response) => {
     try {
         const id = parseInt(req.params.id);
        
@@ -85,20 +74,24 @@ router.put("/reserve/:id", checkUserType(["cliente"]), async (req, res) => {
         if (!existingAppointment.length) {
             return res.status(404).json({ error: "Turno no encontrado" });
         }
+        
         if (existingAppointment[0].status !== "sin_tomar") {
             return res.status(400).json({ error: "Este turno ya no está disponible" });
         }
-        
+       
         // Actualizar el estado del turno a reservado
         const [updatedAppointment] = await db
             .update(appointments)
             .set({
                 status: "reservado",
-                clienteId: req.user.id
+                // Almacenamos la información en el campo de descripción
+                description: existingAppointment[0].description 
+                    ? `${existingAppointment[0].description} - Reservado por un cliente`
+                    : `Reservado por un cliente`
             })
             .where(eq(appointments.id, id))
             .returning();
-            
+           
         res.json({ message: "Turno reservado exitosamente", appointment: updatedAppointment });
     } catch (error) {
         console.error("Error reservando turno:", error);

@@ -16,7 +16,7 @@ export const users = sqliteTable("users", {
   imagen: text("imagen"),
   nombreTaller: text("nombre_taller"),
   tema: text("tema").default("dark"),
-  tipoUsuario: text("tipo_usuario").notNull(), // Cliente o negocio
+  tipoUsuario: text("tipo_usuario").notNull(), // cliente o negocio
   patenteActual: text("patente_actual"),
   imagenAuto: text("imagen_auto"),
   Apyn: text("Apyn"),

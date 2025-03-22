@@ -5,7 +5,7 @@ import { es } from "date-fns/locale";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
@@ -14,8 +14,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Edit, Trash2 } from "lucide-react";
+import { Loader2, Edit, Trash2, ShieldAlert } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Definir tipos para las peticiones API
 type ApiMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
@@ -77,6 +78,10 @@ interface Appointment {
     description?: string;
     status: AppointmentStatus;
 }
+
+// Tipos de usuario
+type UserType = "cliente" | "negocio";
+
 // Esquema de validación para los turnos
 const appointmentSchema = z.object({
     title: z.string().min(1, "El título es requerido"),
@@ -95,13 +100,20 @@ const appointmentSchema = z.object({
     path: ["end"]
 });
 
+// Esquema de validación para la contraseña de negocio
+const businessPasswordSchema = z.object({
+    password: z.string().min(1, "La contraseña es requerida")
+});
+
 // Tipo para el esquema
 type AppointmentFormValues = z.infer<typeof appointmentSchema>;
-
+type BusinessPasswordFormValues = z.infer<typeof businessPasswordSchema>;
 // Componente principal
 export default function CalendarioPage() {
     const { toast } = useToast();
     const queryClient = useQueryClient();
+
+    // Estados para modales y datos
     const [dialogOpen, setDialogOpen] = useState(false);
     const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
     const [reservationDialogOpen, setReservationDialogOpen] = useState(false);
@@ -109,41 +121,55 @@ export default function CalendarioPage() {
     const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [view, setView] = useState<'month' | 'week' | 'day' | 'agenda'>('month');
-    const [isAdmin, setIsAdmin] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(false);
 
-    // Obtener información del usuario y verificar si es admin - CORREGIDO
-    // Obtener información del usuario y verificar si es admin
-// Versión modificada solo del useEffect para forzar que el usuario sea administrador
-useEffect(() => {
-    const fetchUserInfo = async () => {
-        try {
-            const response = await apiRequest('GET', "/api/user/profile");
-            const userData = await response.json();
-            
-            // FORZAR temporalmente el estado de administrador
-            setIsAdmin(true); // Forzamos a true independientemente de la respuesta
-            
-            console.log("User data:", userData);
-            console.log("Is admin forzado a true");
-            console.log("isAdmin value original:", userData.isAdmin);
-        } catch (error) {
-            console.error("Error fetching user data:", error);
-            toast({
-                title: "Error",
-                description: "No se pudo obtener la información del usuario.",
-                variant: "destructive",
-            });
-            // Incluso en caso de error, forzamos a ser admin
-            setIsAdmin(true);
-        } finally {
-            setIsLoading(false);
+    // Estados para la selección de tipo de usuario
+    const [userTypeDialogOpen, setUserTypeDialogOpen] = useState(true);
+    const [userType, setUserType] = useState<UserType | null>(null);
+    const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+
+    // Formulario para la contraseña
+    const passwordForm = useForm<BusinessPasswordFormValues>({
+        resolver: zodResolver(businessPasswordSchema),
+        defaultValues: {
+            password: ""
+        }
+    });
+
+    // Contraseña correcta para acceso de negocio
+    const BUSINESS_PASSWORD = "admin1234";
+
+    // Manejador para la selección de tipo de usuario
+    const handleUserTypeSelect = (type: UserType) => {
+        if (type === "negocio") {
+            setPasswordDialogOpen(true);
+        } else {
+            setUserType(type);
+            setUserTypeDialogOpen(false);
         }
     };
 
-    fetchUserInfo();
-}, [toast]);
-    // Configuración del formulario
+    // Manejador para la verificación de contraseña
+    const handlePasswordSubmit = (data: BusinessPasswordFormValues) => {
+        if (data.password === BUSINESS_PASSWORD) {
+            setUserType("negocio");
+            setPasswordDialogOpen(false);
+            setUserTypeDialogOpen(false);
+            toast({
+                title: "Acceso concedido",
+                description: "Ha ingresado como administrador de negocio.",
+            });
+        } else {
+            toast({
+                title: "Contraseña incorrecta",
+                description: "La contraseña ingresada no es válida.",
+                variant: "destructive",
+            });
+            passwordForm.reset();
+        }
+    };
+
+    // Configuración del formulario para turnos
     const form = useForm<AppointmentFormValues>({
         resolver: zodResolver(appointmentSchema),
         defaultValues: {
@@ -187,7 +213,6 @@ useEffect(() => {
             status: appointment.status || APPOINTMENT_STATES.AVAILABLE
         }));
     }, [appointmentsData]);
-
     // Mutación para crear un nuevo turno
     const createMutation = useMutation({
         mutationFn: async (data: AppointmentFormValues) => {
@@ -225,6 +250,7 @@ useEffect(() => {
             });
         },
     });
+
     // Mutación para actualizar un turno existente
     const updateMutation = useMutation({
         mutationFn: async (data: AppointmentFormValues & { id: number }) => {
@@ -328,7 +354,7 @@ useEffect(() => {
     const handleSelectSlot = useCallback(
         (slotInfo: { start: Date; end: Date; }) => {
             const { start, end } = slotInfo;
-            if (!start || !end || !isAdmin) return;
+            if (!start || !end || userType !== "negocio") return;
 
             try {
                 setIsEditing(false);
@@ -349,7 +375,7 @@ useEffect(() => {
                 });
             }
         },
-        [form, isAdmin, toast]
+        [form, userType, toast]
     );
 
     // Manejador para seleccionar un evento existente en el calendario
@@ -358,7 +384,7 @@ useEffect(() => {
             console.log("Selected event:", event);
             setSelectedAppointment(event);
 
-            if (isAdmin) {
+            if (userType === "negocio") {
                 // Administradores ven detalles y pueden editar
                 setDetailsDialogOpen(true);
             } else if (event.status === APPOINTMENT_STATES.AVAILABLE) {
@@ -373,11 +399,12 @@ useEffect(() => {
                 });
             }
         },
-        [isAdmin, toast]
+        [userType, toast]
     );
+
     // Iniciar edición de un turno
     const handleEditAppointment = (appointment: Appointment) => {
-        if (!isAdmin) return;
+        if (userType !== "negocio") return;
 
         try {
             setSelectedAppointment(appointment);
@@ -402,10 +429,9 @@ useEffect(() => {
             });
         }
     };
-
     // Manejador para eliminar un turno
     const handleDeleteAppointment = (appointment: Appointment) => {
-        if (!isAdmin) return;
+        if (userType !== "negocio") return;
 
         setSelectedAppointment(appointment);
         setDeleteConfirmDialogOpen(true);
@@ -461,6 +487,7 @@ useEffect(() => {
         },
         []
     );
+
     // Formatear título del evento para el calendario
     const formats = {
         eventTimeRangeFormat: ({ start, end }: { start: Date, end: Date }) => {
@@ -494,7 +521,7 @@ useEffect(() => {
 
     // Crear un nuevo turno (botón de acción rápida)
     const handleNewAppointment = () => {
-        if (!isAdmin) return;
+        if (userType !== "negocio") return;
 
         setIsEditing(false);
         form.reset({
@@ -507,465 +534,571 @@ useEffect(() => {
         setDialogOpen(true);
     };
 
+    // Cambiar el tipo de usuario (utilidad para pruebas)
+    const changeUserType = () => {
+        setUserTypeDialogOpen(true);
+    };
+    // Si no hay tipo de usuario seleccionado, mostrar la pantalla de carga
     if (isLoading) {
         return (
             <div className="flex items-center justify-center h-64">
                 <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
-                <span className="ml-2">Cargando información de usuario...</span>
+                <span className="ml-2">Cargando información...</span>
             </div>
         );
     }
+
     return (
         <div className="container mx-auto py-10 space-y-6">
-            <Card>
-                <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <CardTitle>
-                            Calendario de Turnos {isAdmin ? "(Administración)" : "(Reserva)"}
-                        </CardTitle>
-                        {isAdmin && (
-                            <Button onClick={handleNewAppointment}>
-                                Nuevo Turno
-                            </Button>
-                        )}
-                    </div>
-                </CardHeader>
-                <CardContent>
-                    <div style={{ height: '600px' }}>
-                        {isLoadingAppointments ? (
-                            <div className="flex items-center justify-center h-full">
-                                <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
-                                <span className="ml-2">Cargando calendario...</span>
-                            </div>
-                        ) : (
-                            <Calendar
-                                localizer={localizer}
-                                events={appointments}
-                                startAccessor="start"
-                                endAccessor="end"
-                                style={{ height: '100%' }}
-                                selectable={isAdmin} // Solo admin puede seleccionar slots
-                                onSelectSlot={handleSelectSlot}
-                                onSelectEvent={handleSelectEvent}
-                                eventPropGetter={eventStyleGetter}
-                                view={view}
-                                formats={formats}
-                                onView={(newView) => setView(newView as 'month' | 'week' | 'day' | 'agenda')}
-                                messages={{
-                                    next: "Siguiente",
-                                    previous: "Anterior",
-                                    today: "Hoy",
-                                    month: "Mes",
-                                    week: "Semana",
-                                    day: "Día",
-                                    agenda: "Agenda",
-                                    date: "Fecha",
-                                    time: "Hora",
-                                    event: "Evento",
-                                }}
-                            />
-                        )}
-                    </div>
-
-                    <div className="mt-4 flex items-center text-sm">
-                        <span className="flex items-center mr-4">
-                            <span className="inline-block w-4 h-4 bg-green-500 rounded-full mr-2"></span>
-                            Sin tomar
-                        </span>
-                        <span className="flex items-center mr-4">
-                            <span className="inline-block w-4 h-4 bg-orange-500 rounded-full mr-2"></span>
-                            Reservado
-                        </span>
-                        <span className="flex items-center">
-                            <span className="inline-block w-4 h-4 bg-red-500 rounded-full mr-2"></span>
-                            Finalizado
-                        </span>
-                    </div>
-
-                    {!isAdmin && (
-                        <div className="mt-2 text-sm text-gray-500">
-                            <p>Haga clic en un turno <span className="font-bold text-green-500">verde</span> para reservarlo.</p>
-                        </div>
-                    )}
-
-                    {isAdmin && (
-                        <div className="mt-2 text-sm text-gray-500">
-                            <p>Haga clic en una fecha para crear un nuevo turno o seleccione un turno existente para ver sus detalles.</p>
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
-            {/* Lista de turnos (solo para administradores) */}
-            {isAdmin && (
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Listado de Turnos</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        {isLoadingAppointments ? (
-                            <div className="flex items-center justify-center h-20">
-                                <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
-                                <span className="ml-2">Cargando turnos...</span>
-                            </div>
-                        ) : appointments.length === 0 ? (
-                            <div className="text-center py-4 text-gray-500">
-                                No hay turnos registrados.
-                            </div>
-                        ) : (
-                            <div className="overflow-x-auto">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Título</TableHead>
-                                            <TableHead>Fecha</TableHead>
-                                            <TableHead>Horario</TableHead>
-                                            <TableHead>Estado</TableHead>
-                                            <TableHead>Acciones</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {appointments
-                                            .sort((a, b) => new Date(b.start).getTime() - new Date(a.start).getTime())
-                                            .map((appointment) => (
-                                                <TableRow key={appointment.id}>
-                                                    <TableCell>{appointment.title}</TableCell>
-                                                    <TableCell>
-                                                        {format(new Date(appointment.start), "dd/MM/yyyy")}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        {format(new Date(appointment.start), "HH:mm")} - {format(new Date(appointment.end), "HH:mm")}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <div className="flex items-center">
-                                                            <span
-                                                                className={`inline-block w-3 h-3 rounded-full mr-2 ${appointment.status === APPOINTMENT_STATES.AVAILABLE
-                                                                        ? "bg-green-500"
-                                                                        : appointment.status === APPOINTMENT_STATES.RESERVED
-                                                                            ? "bg-orange-500"
-                                                                            : "bg-red-500"
-                                                                    }`}
-                                                            ></span>
-                                                            <span>
-                                                                {appointment.status === APPOINTMENT_STATES.AVAILABLE
-                                                                    ? "Sin tomar"
-                                                                    : appointment.status === APPOINTMENT_STATES.RESERVED
-                                                                        ? "Reservado"
-                                                                        : "Finalizado"
-                                                                }
-                                                            </span>
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <div className="flex space-x-2">
-                                                            <Button
-                                                                variant="outline"
-                                                                size="icon"
-                                                                onClick={() => handleEditAppointment(appointment)}
-                                                            >
-                                                                <Edit className="h-4 w-4" />
-                                                            </Button>
-                                                            <Button
-                                                                variant="outline"
-                                                                size="icon"
-                                                                className="text-red-500 hover:text-red-600"
-                                                                onClick={() => handleDeleteAppointment(appointment)}
-                                                            >
-                                                                <Trash2 className="h-4 w-4" />
-                                                            </Button>
-                                                        </div>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                    </TableBody>
-                                </Table>
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-            )}
-            {/* Diálogo de creación/edición de turno */}
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            {/* Diálogo de selección de tipo de usuario */}
+            <Dialog open={userTypeDialogOpen} onOpenChange={setUserTypeDialogOpen}>
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>
-                        <DialogTitle>{isEditing ? "Editar Turno" : "Nuevo Turno"}</DialogTitle>
+                        <DialogTitle className="text-center text-xl mb-2">Seleccionar Tipo de Usuario</DialogTitle>
                     </DialogHeader>
-                    <Form {...form}>
-                        <form
-                            onSubmit={form.handleSubmit(handleSubmit)}
-                            className="space-y-4"
-                        >
+                    <div className="py-4">
+                        <p className="text-center text-gray-600 mb-6">
+                            Seleccione el tipo de usuario para ver el calendario.
+                        </p>
+                        <div className="flex flex-col sm:flex-row justify-center gap-4">
+                            <Button
+                                className="flex-1 py-6 px-4"
+                                variant="outline"
+                                onClick={() => handleUserTypeSelect("cliente")}
+                            >
+                                <div className="flex flex-col items-center">
+                                    <span className="text-lg font-semibold">Cliente</span>
+                                    <span className="text-xs text-gray-500 mt-1">Ver y reservar turnos</span>
+                                </div>
+                            </Button>
+                            <Button
+                                className="flex-1 py-6 px-4"
+                                variant="outline"
+                                onClick={() => handleUserTypeSelect("negocio")}
+                            >
+                                <div className="flex flex-col items-center">
+                                    <span className="text-lg font-semibold">Negocio</span>
+                                    <span className="text-xs text-gray-500 mt-1">Administrar turnos</span>
+                                </div>
+                            </Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Diálogo de contraseña para negocio */}
+            <Dialog open={passwordDialogOpen} onOpenChange={setPasswordDialogOpen}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Autenticación de Administrador</DialogTitle>
+                    </DialogHeader>
+                    <Form {...passwordForm}>
+                        <form onSubmit={passwordForm.handleSubmit(handlePasswordSubmit)} className="space-y-4">
                             <FormField
-                                control={form.control}
-                                name="title"
+                                control={passwordForm.control}
+                                name="password"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Título</FormLabel>
+                                        <FormLabel>Contraseña de Administrador</FormLabel>
                                         <FormControl>
-                                            <Input {...field} />
+                                            <Input type="password" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}
                             />
-                            <FormField
-                                control={form.control}
-                                name="start"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Fecha y hora de inicio</FormLabel>
-                                        <FormControl>
-                                            <Input type="datetime-local" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="end"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Fecha y hora de fin</FormLabel>
-                                        <FormControl>
-                                            <Input type="datetime-local" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="description"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Descripción</FormLabel>
-                                        <FormControl>
-                                            <Input {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="status"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Estado</FormLabel>
-                                        <Select
-                                            onValueChange={field.onChange}
-                                            defaultValue={field.value}
-                                            value={field.value}
-                                        >
-                                            <FormControl>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Seleccione un estado" />
-                                                </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                <SelectItem value={APPOINTMENT_STATES.AVAILABLE}>
-                                                    Sin tomar
-                                                </SelectItem>
-                                                <SelectItem value={APPOINTMENT_STATES.RESERVED}>
-                                                    Reservado
-                                                </SelectItem>
-                                                <SelectItem value={APPOINTMENT_STATES.COMPLETED}>
-                                                    Finalizado
-                                                </SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <div className="flex justify-end space-x-2">
+                            <p className="text-sm text-gray-500">
+                                <ShieldAlert className="h-4 w-4 inline mr-1" />
+                                Para acceso como negocio, ingrese la contraseña.
+                            </p>
+                            <DialogFooter>
                                 <Button
                                     type="button"
                                     variant="outline"
                                     onClick={() => {
-                                        setDialogOpen(false);
-                                        form.reset();
+                                        setPasswordDialogOpen(false);
+                                        setUserTypeDialogOpen(true);
                                     }}
                                 >
-                                    Cancelar
+                                    Volver
                                 </Button>
-                                <Button
-                                    type="submit"
-                                    disabled={createMutation.isPending || updateMutation.isPending}
-                                >
-                                    {isEditing
-                                        ? (updateMutation.isPending ? "Actualizando..." : "Actualizar")
-                                        : (createMutation.isPending ? "Creando..." : "Crear")
-                                    }
-                                </Button>
-                            </div>
+                                <Button type="submit">Ingresar</Button>
+                            </DialogFooter>
                         </form>
                     </Form>
                 </DialogContent>
             </Dialog>
 
-            {/* Diálogo de detalles del turno (solo para admin) */}
-            <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
-                <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>Detalles del Turno</DialogTitle>
-                    </DialogHeader>
-                    {selectedAppointment && (
-                        <div className="space-y-4">
-                            <div>
-                                <h3 className="font-medium text-sm text-gray-500">Título</h3>
-                                <p>{selectedAppointment.title}</p>
-                            </div>
-                            <div>
-                                <h3 className="font-medium text-sm text-gray-500">Fecha y hora</h3>
-                                <p>
-                                    {format(new Date(selectedAppointment.start), "dd/MM/yyyy")} -&nbsp;
-                                    {format(new Date(selectedAppointment.start), "HH:mm")} a&nbsp;
-                                    {format(new Date(selectedAppointment.end), "HH:mm")}
-                                </p>
-                            </div>
-                            {selectedAppointment.description && (
-                                <div>
-                                    <h3 className="font-medium text-sm text-gray-500">Descripción</h3>
-                                    <p>{selectedAppointment.description}</p>
-                                </div>
-                            )}
-                            <div>
-                                <h3 className="font-medium text-sm text-gray-500">Estado</h3>
-                                <div className="flex items-center">
-                                    <span
-                                        className={`inline-block w-3 h-3 rounded-full mr-2 ${selectedAppointment.status === APPOINTMENT_STATES.AVAILABLE
-                                                ? "bg-green-500"
-                                                : selectedAppointment.status === APPOINTMENT_STATES.RESERVED
-                                                    ? "bg-orange-500"
-                                                    : "bg-red-500"
-                                            }`}
-                                    ></span>
-                                    <span>
-                                        {selectedAppointment.status === APPOINTMENT_STATES.AVAILABLE
-                                            ? "Sin tomar"
-                                            : selectedAppointment.status === APPOINTMENT_STATES.RESERVED
-                                                ? "Reservado"
-                                                : "Finalizado"
-                                        }
-                                    </span>
-                                </div>
-                            </div>
-                            <div className="flex justify-end space-x-2 pt-4">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => setDetailsDialogOpen(false)}
-                                >
-                                    Cerrar
-                                </Button>
-                                <Button
-                                    type="button"
-                                    onClick={() => handleEditAppointment(selectedAppointment)}
-                                >
-                                    Editar
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant="destructive"
-                                    onClick={() => {
-                                        setDetailsDialogOpen(false);
-                                        handleDeleteAppointment(selectedAppointment);
-                                    }}
-                                >
-                                    Eliminar
-                                </Button>
-                            </div>
-                        </div>
-                    )}
-                </DialogContent>
-            </Dialog>
+            {/* Si no hay tipo de usuario seleccionado, no mostrar nada más */}
+            {!userType && (
+                <div className="flex flex-col items-center justify-center h-64">
+                    <p className="text-gray-500">Seleccione un tipo de usuario para continuar.</p>
+                </div>
+            )}
 
-            {/* Diálogo de reserva (solo para clientes) */}
-            <Dialog open={reservationDialogOpen} onOpenChange={setReservationDialogOpen}>
-                <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>Reservar Turno</DialogTitle>
-                    </DialogHeader>
-                    {selectedAppointment && (
-                        <div className="space-y-4">
-                            <div>
-                                <h3 className="font-medium text-sm text-gray-500">Título</h3>
-                                <p>{selectedAppointment.title}</p>
+            {/* Contenido principal - solo se muestra si hay tipo de usuario seleccionado */}
+            {userType && (
+                <>
+                    <Card>
+                        <CardHeader>
+                            <div className="flex items-center justify-between">
+                                <CardTitle>
+                                    Calendario de Turnos {userType === "negocio" ? "(Administración)" : "(Reserva)"}
+                                </CardTitle>
+                                <div className="flex items-center gap-4">
+                                    <div className="text-sm text-gray-500">
+                                        Modo: <span className="font-semibold">{userType === "negocio" ? "Negocio" : "Cliente"}</span>
+                                    </div>
+                                    <Button variant="outline" size="sm" onClick={changeUserType}>
+                                        Cambiar Modo
+                                    </Button>
+                                    {userType === "negocio" && (
+                                        <Button onClick={handleNewAppointment}>
+                                            Nuevo Turno
+                                        </Button>
+                                    )}
+                                </div>
                             </div>
-                            <div>
-                                <h3 className="font-medium text-sm text-gray-500">Fecha y hora</h3>
-                                <p>
-                                    {format(new Date(selectedAppointment.start), "dd/MM/yyyy")} -&nbsp;
-                                    {format(new Date(selectedAppointment.start), "HH:mm")} a&nbsp;
-                                    {format(new Date(selectedAppointment.end), "HH:mm")}
-                                </p>
+                        </CardHeader>
+                        <CardContent>
+                            <div style={{ height: '600px' }}>
+                                {isLoadingAppointments ? (
+                                    <div className="flex items-center justify-center h-full">
+                                        <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+                                        <span className="ml-2">Cargando calendario...</span>
+                                    </div>
+                                ) : (
+                                    <Calendar
+                                        localizer={localizer}
+                                        events={appointments}
+                                        startAccessor="start"
+                                        endAccessor="end"
+                                        style={{ height: '100%' }}
+                                        selectable={userType === "negocio"} // Solo admin puede seleccionar slots
+                                        onSelectSlot={handleSelectSlot}
+                                        onSelectEvent={handleSelectEvent}
+                                        eventPropGetter={eventStyleGetter}
+                                        view={view}
+                                        formats={formats}
+                                        onView={(newView) => setView(newView as 'month' | 'week' | 'day' | 'agenda')}
+                                        messages={{
+                                            next: "Siguiente",
+                                            previous: "Anterior",
+                                            today: "Hoy",
+                                            month: "Mes",
+                                            week: "Semana",
+                                            day: "Día",
+                                            agenda: "Agenda",
+                                            date: "Fecha",
+                                            time: "Hora",
+                                            event: "Evento",
+                                        }}
+                                    />
+                                )}
                             </div>
-                            {selectedAppointment.description && (
-                                <div>
-                                    <h3 className="font-medium text-sm text-gray-500">Descripción</h3>
-                                    <p>{selectedAppointment.description}</p>
+
+                            <div className="mt-4 flex items-center text-sm">
+                                <span className="flex items-center mr-4">
+                                    <span className="inline-block w-4 h-4 bg-green-500 rounded-full mr-2"></span>
+                                    Sin tomar
+                                </span>
+                                <span className="flex items-center mr-4">
+                                    <span className="inline-block w-4 h-4 bg-orange-500 rounded-full mr-2"></span>
+                                    Reservado
+                                </span>
+                                <span className="flex items-center">
+                                    <span className="inline-block w-4 h-4 bg-red-500 rounded-full mr-2"></span>
+                                    Finalizado
+                                </span>
+                            </div>
+
+                            {userType === "cliente" && (
+                                <div className="mt-2 text-sm text-gray-500">
+                                    <p>Haga clic en un turno <span className="font-bold text-green-500">verde</span> para reservarlo.</p>
                                 </div>
                             )}
 
-                            <div className="pt-2">
-                                <p className="text-sm text-gray-600">
-                                    ¿Desea reservar este turno? Una vez reservado, no podrá cancelarlo directamente.
-                                </p>
-                            </div>
+                            {userType === "negocio" && (
+                                <div className="mt-2 text-sm text-gray-500">
+                                    <p>Haga clic en una fecha para crear un nuevo turno o seleccione un turno existente para ver sus detalles.</p>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
 
-                            <div className="flex justify-end space-x-2 pt-4">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => setReservationDialogOpen(false)}
-                                >
-                                    Cancelar
-                                </Button>
-                                <Button
-                                    type="button"
-                                    onClick={handleReserveAppointment}
-                                    disabled={reserveMutation.isPending}
-                                >
-                                    {reserveMutation.isPending ? "Reservando..." : "Reservar"}
-                                </Button>
-                            </div>
-                        </div>
+                    {/* Lista de turnos (solo para negocio) */}
+                    {userType === "negocio" && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Listado de Turnos</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                {isLoadingAppointments ? (
+                                    <div className="flex items-center justify-center h-20">
+                                        <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+                                        <span className="ml-2">Cargando turnos...</span>
+                                    </div>
+                                ) : appointments.length === 0 ? (
+                                    <div className="text-center py-4 text-gray-500">
+                                        No hay turnos registrados.
+                                    </div>
+                                ) : (
+                                    <div className="overflow-x-auto">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead>Título</TableHead>
+                                                    <TableHead>Fecha</TableHead>
+                                                    <TableHead>Horario</TableHead>
+                                                    <TableHead>Estado</TableHead>
+                                                    <TableHead>Acciones</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {appointments
+                                                    .sort((a, b) => new Date(b.start).getTime() - new Date(a.start).getTime())
+                                                    .map((appointment) => (
+                                                        <TableRow key={appointment.id}>
+                                                            <TableCell>{appointment.title}</TableCell>
+                                                            <TableCell>
+                                                                {format(new Date(appointment.start), "dd/MM/yyyy")}
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                {format(new Date(appointment.start), "HH:mm")} - {format(new Date(appointment.end), "HH:mm")}
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <div className="flex items-center">
+                                                                    <span
+                                                                        className={`inline-block w-3 h-3 rounded-full mr-2 ${appointment.status === APPOINTMENT_STATES.AVAILABLE
+                                                                                ? "bg-green-500"
+                                                                                : appointment.status === APPOINTMENT_STATES.RESERVED
+                                                                                    ? "bg-orange-500"
+                                                                                    : "bg-red-500"
+                                                                            }`}
+                                                                    ></span>
+                                                                    <span>
+                                                                        {appointment.status === APPOINTMENT_STATES.AVAILABLE
+                                                                            ? "Sin tomar"
+                                                                            : appointment.status === APPOINTMENT_STATES.RESERVED
+                                                                                ? "Reservado"
+                                                                                : "Finalizado"
+                                                                        }
+                                                                    </span>
+                                                                </div>
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <div className="flex space-x-2">
+                                                                    <Button
+                                                                        variant="outline"
+                                                                        size="icon"
+                                                                        onClick={() => handleEditAppointment(appointment)}
+                                                                    >
+                                                                        <Edit className="h-4 w-4" />
+                                                                    </Button>
+                                                                    <Button
+                                                                        variant="outline"
+                                                                        size="icon"
+                                                                        className="text-red-500 hover:text-red-600"
+                                                                        onClick={() => handleDeleteAppointment(appointment)}
+                                                                    >
+                                                                        <Trash2 className="h-4 w-4" />
+                                                                    </Button>
+                                                                </div>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    ))}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
                     )}
-                </DialogContent>
-            </Dialog>
-            {/* Diálogo de confirmación de eliminación */}
-            <Dialog open={deleteConfirmDialogOpen} onOpenChange={setDeleteConfirmDialogOpen}>
-                <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>Confirmar Eliminación</DialogTitle>
-                    </DialogHeader>
-                    {selectedAppointment && (
-                        <div className="space-y-4">
-                            <p>¿Está seguro que desea eliminar el turno <strong>{selectedAppointment.title}</strong>?</p>
-                            <p className="text-sm text-gray-500">Esta acción no se puede deshacer.</p>
+                    {/* Diálogo de creación/edición de turno */}
+                    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                        <DialogContent className="sm:max-w-md">
+                            <DialogHeader>
+                                <DialogTitle>{isEditing ? "Editar Turno" : "Nuevo Turno"}</DialogTitle>
+                            </DialogHeader>
+                            <Form {...form}>
+                                <form
+                                    onSubmit={form.handleSubmit(handleSubmit)}
+                                    className="space-y-4"
+                                >
+                                    <FormField
+                                        control={form.control}
+                                        name="title"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Título</FormLabel>
+                                                <FormControl>
+                                                    <Input {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="start"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Fecha y hora de inicio</FormLabel>
+                                                <FormControl>
+                                                    <Input type="datetime-local" {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="end"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Fecha y hora de fin</FormLabel>
+                                                <FormControl>
+                                                    <Input type="datetime-local" {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="description"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Descripción</FormLabel>
+                                                <FormControl>
+                                                    <Input {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="status"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Estado</FormLabel>
+                                                <Select
+                                                    onValueChange={field.onChange}
+                                                    defaultValue={field.value}
+                                                    value={field.value}
+                                                >
+                                                    <FormControl>
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Seleccione un estado" />
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent>
+                                                        <SelectItem value={APPOINTMENT_STATES.AVAILABLE}>
+                                                            Sin tomar
+                                                        </SelectItem>
+                                                        <SelectItem value={APPOINTMENT_STATES.RESERVED}>
+                                                            Reservado
+                                                        </SelectItem>
+                                                        <SelectItem value={APPOINTMENT_STATES.COMPLETED}>
+                                                            Finalizado
+                                                        </SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <div className="flex justify-end space-x-2">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={() => {
+                                                setDialogOpen(false);
+                                                form.reset();
+                                            }}
+                                        >
+                                            Cancelar
+                                        </Button>
+                                        <Button
+                                            type="submit"
+                                            disabled={createMutation.isPending || updateMutation.isPending}
+                                        >
+                                            {isEditing
+                                                ? (updateMutation.isPending ? "Actualizando..." : "Actualizar")
+                                                : (createMutation.isPending ? "Creando..." : "Crear")
+                                            }
+                                        </Button>
+                                    </div>
+                                </form>
+                            </Form>
+                        </DialogContent>
+                    </Dialog>
 
-                            <div className="flex justify-end space-x-2 pt-4">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => setDeleteConfirmDialogOpen(false)}
-                                >
-                                    Cancelar
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant="destructive"
-                                    onClick={confirmDeleteAppointment}
-                                    disabled={deleteMutation.isPending}
-                                >
-                                    {deleteMutation.isPending ? "Eliminando..." : "Eliminar"}
-                                </Button>
-                            </div>
-                        </div>
-                    )}
-                </DialogContent>
-            </Dialog>
+                    {/* Diálogo de detalles del turno (solo para admin) */}
+                    <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
+                        <DialogContent className="sm:max-w-md">
+                            <DialogHeader>
+                                <DialogTitle>Detalles del Turno</DialogTitle>
+                            </DialogHeader>
+                            {selectedAppointment && (
+                                <div className="space-y-4">
+                                    <div>
+                                        <h3 className="font-medium text-sm text-gray-500">Título</h3>
+                                        <p>{selectedAppointment.title}</p>
+                                    </div>
+                                    <div>
+                                        <h3 className="font-medium text-sm text-gray-500">Fecha y hora</h3>
+                                        <p>
+                                            {format(new Date(selectedAppointment.start), "dd/MM/yyyy")} -&nbsp;
+                                            {format(new Date(selectedAppointment.start), "HH:mm")} a&nbsp;
+                                            {format(new Date(selectedAppointment.end), "HH:mm")}
+                                        </p>
+                                    </div>
+                                    {selectedAppointment.description && (
+                                        <div>
+                                            <h3 className="font-medium text-sm text-gray-500">Descripción</h3>
+                                            <p>{selectedAppointment.description}</p>
+                                        </div>
+                                    )}
+                                    <div>
+                                        <h3 className="font-medium text-sm text-gray-500">Estado</h3>
+                                        <div className="flex items-center">
+                                            <span
+                                                className={`inline-block w-3 h-3 rounded-full mr-2 ${selectedAppointment.status === APPOINTMENT_STATES.AVAILABLE
+                                                        ? "bg-green-500"
+                                                        : selectedAppointment.status === APPOINTMENT_STATES.RESERVED
+                                                            ? "bg-orange-500"
+                                                            : "bg-red-500"
+                                                    }`}
+                                            ></span>
+                                            <span>
+                                                {selectedAppointment.status === APPOINTMENT_STATES.AVAILABLE
+                                                    ? "Sin tomar"
+                                                    : selectedAppointment.status === APPOINTMENT_STATES.RESERVED
+                                                        ? "Reservado"
+                                                        : "Finalizado"
+                                                }
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-end space-x-2 pt-4">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={() => setDetailsDialogOpen(false)}
+                                        >
+                                            Cerrar
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            onClick={() => handleEditAppointment(selectedAppointment)}
+                                        >
+                                            Editar
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            variant="destructive"
+                                            onClick={() => {
+                                                setDetailsDialogOpen(false);
+                                                handleDeleteAppointment(selectedAppointment);
+                                            }}
+                                        >
+                                            Eliminar
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
+                        </DialogContent>
+                    </Dialog>
+
+                    {/* Diálogo de reserva (solo para clientes) */}
+                    <Dialog open={reservationDialogOpen} onOpenChange={setReservationDialogOpen}>
+                        <DialogContent className="sm:max-w-md">
+                            <DialogHeader>
+                                <DialogTitle>Reservar Turno</DialogTitle>
+                            </DialogHeader>
+                            {selectedAppointment && (
+                                <div className="space-y-4">
+                                    <div>
+                                        <h3 className="font-medium text-sm text-gray-500">Título</h3>
+                                        <p>{selectedAppointment.title}</p>
+                                    </div>
+                                    <div>
+                                        <h3 className="font-medium text-sm text-gray-500">Fecha y hora</h3>
+                                        <p>
+                                            {format(new Date(selectedAppointment.start), "dd/MM/yyyy")} -&nbsp;
+                                            {format(new Date(selectedAppointment.start), "HH:mm")} a&nbsp;
+                                            {format(new Date(selectedAppointment.end), "HH:mm")}
+                                        </p>
+                                    </div>
+                                    {selectedAppointment.description && (
+                                        <div>
+                                            <h3 className="font-medium text-sm text-gray-500">Descripción</h3>
+                                            <p>{selectedAppointment.description}</p>
+                                        </div>
+                                    )}
+
+                                    <div className="pt-2">
+                                        <p className="text-sm text-gray-600">
+                                            ¿Desea reservar este turno? Una vez reservado, no podrá cancelarlo directamente.
+                                        </p>
+                                    </div>
+
+                                    <div className="flex justify-end space-x-2 pt-4">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={() => setReservationDialogOpen(false)}
+                                        >
+                                            Cancelar
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            onClick={handleReserveAppointment}
+                                            disabled={reserveMutation.isPending}
+                                        >
+                                            {reserveMutation.isPending ? "Reservando..." : "Reservar"}
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
+                        </DialogContent>
+                    </Dialog>
+                    {/* Diálogo de confirmación de eliminación */}
+                    <Dialog open={deleteConfirmDialogOpen} onOpenChange={setDeleteConfirmDialogOpen}>
+                        <DialogContent className="sm:max-w-md">
+                            <DialogHeader>
+                                <DialogTitle>Confirmar Eliminación</DialogTitle>
+                            </DialogHeader>
+                            {selectedAppointment && (
+                                <div className="space-y-4">
+                                    <p>¿Está seguro que desea eliminar el turno <strong>{selectedAppointment.title}</strong>?</p>
+                                    <p className="text-sm text-gray-500">Esta acción no se puede deshacer.</p>
+
+                                    <div className="flex justify-end space-x-2 pt-4">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={() => setDeleteConfirmDialogOpen(false)}
+                                        >
+                                            Cancelar
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            variant="destructive"
+                                            onClick={confirmDeleteAppointment}
+                                            disabled={deleteMutation.isPending}
+                                        >
+                                            {deleteMutation.isPending ? "Eliminando..." : "Eliminar"}
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
+                        </DialogContent>
+                    </Dialog>
+                </>
+            )}
         </div>
     );
 }

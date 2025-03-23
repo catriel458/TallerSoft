@@ -62,6 +62,7 @@ export const appointments = sqliteTable("appointments", {
   status: text("status").default("sin_tomar"),
 });
 
+// Esquemas base
 export const insertUserSchema = createInsertSchema(users)
   .pick({
     username: true,
@@ -76,13 +77,37 @@ export const insertUserSchema = createInsertSchema(users)
 
 export const insertTurnoSchema = createInsertSchema(turnos);
 export const insertReparacionSchema = createInsertSchema(reparaciones);
+export const insertHistorialPatenteSchema = createInsertSchema(historialPatentes);
 
+// Esquemas adicionales para el perfil
+export const profileUpdateSchema = z.object({
+  Apyn: z.string().optional(),
+  direccion: z.string().optional(),
+  nombreTaller: z.string().optional(),
+  patenteActual: z.string().optional(),
+  tipoUsuario: z.enum(["cliente", "negocio"]).optional(),
+});
+
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, "La contraseña actual es requerida"),
+  newPassword: z.string().min(6, "La nueva contraseña debe tener al menos 6 caracteres"),
+});
+
+export const updateImageSchema = z.object({
+  imageData: z.string(),
+});
+
+// Tipos inferidos
 export type Turno = typeof turnos.$inferSelect;
 export type InsertTurno = typeof turnos.$inferInsert;
 export type Reparacion = typeof reparaciones.$inferSelect;
 export type InsertReparacion = typeof reparaciones.$inferInsert;
 export type HistorialPatente = typeof historialPatentes.$inferSelect;
+export type InsertHistorialPatente = typeof historialPatentes.$inferInsert;
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 export type Appointment = typeof appointments.$inferSelect;
 export type InsertAppointment = typeof appointments.$inferInsert;
+export type ProfileUpdate = z.infer<typeof profileUpdateSchema>;
+export type ChangePassword = z.infer<typeof changePasswordSchema>;
+export type UpdateImage = z.infer<typeof updateImageSchema>;

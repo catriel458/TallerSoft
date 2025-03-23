@@ -41,7 +41,6 @@ const apiRequest = async (method: HttpMethod, url: string, data?: any) => {
 };
 
 const insertReparacionSchema = createInsertSchema(reparaciones);
-
 export default function ReparacionesPage() {
     const { toast } = useToast();
     const queryClient = useQueryClient();
@@ -113,7 +112,6 @@ export default function ReparacionesPage() {
             });
         },
     });
-
     const deleteMutation = useMutation({
         mutationFn: async (id: number) => {
             await apiRequest("DELETE", `/api/reparaciones/${id}`);
@@ -228,7 +226,6 @@ export default function ReparacionesPage() {
             },
         },
     ];
-
     return (
         <div className="container mx-auto py-10 space-y-6">
             <Card>
@@ -349,39 +346,37 @@ export default function ReparacionesPage() {
                                     </FormItem>
                                 )}
                             />
-                            <div className="grid grid-cols-2 gap-4">
-                                <FormField
-                                    control={form.control}
-                                    name="reparaciones"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Reparaciones</FormLabel>
-                                            <FormControl>
-                                                <Textarea {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="costo"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Costo</FormLabel>
-                                            <FormControl>
-                                                <Input
-                                                    type="number"
-                                                    step="any"
-                                                    {...field}
-                                                    onChange={e => field.onChange(parseFloat(e.target.value))}
-                                                />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                            </div>
+                            <FormField
+                                control={form.control}
+                                name="reparaciones"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Reparaciones</FormLabel>
+                                        <FormControl>
+                                            <Textarea {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="costo"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Costo</FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                type="number"
+                                                step="any"
+                                                {...field}
+                                                onChange={e => field.onChange(parseFloat(e.target.value))}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
                             <FormField
                                 control={form.control}
                                 name="observaciones"

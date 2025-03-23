@@ -137,12 +137,6 @@ const MobileMenu = () => {
             </Button>
           </Link>
 
-          <Link href="/turnos">
-            <Button variant="ghost" className="w-full justify-start gap-2">
-              <Calendar className="h-4 w-4" />
-              Turnos
-            </Button>
-          </Link>
 
           <Link href="/reparaciones">
             <Button variant="ghost" className="w-full justify-start gap-2">

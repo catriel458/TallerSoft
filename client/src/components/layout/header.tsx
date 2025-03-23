@@ -37,13 +37,6 @@ export default function Header() {
         </Button>
       </Link>
 
-      <Link href="/turnos">
-        <Button variant="ghost" className="gap-2 text-white dark:text-white hover:text-primary dark:hover:text-primary">
-          <Calendar className="h-4 w-4" />
-          Turnos
-        </Button>
-      </Link>
-
       <Link href="/reparaciones">
         <Button variant="ghost" className="gap-2 text-white dark:text-white hover:text-primary dark:hover:text-primary">
           <DollarSign className="h-4 w-4" />
@@ -79,13 +72,6 @@ export default function Header() {
                 Mi Perfil
               </DropdownMenuItem>
             </Link>
-            {user.isAdmin && (
-              <Link href="/configuracion">
-                <DropdownMenuItem className="cursor-pointer text-white hover:text-primary">
-                  Configuración
-                </DropdownMenuItem>
-              </Link>
-            )}
             <DropdownMenuItem
               className="text-red-500 cursor-pointer hover:text-red-400"
               onClick={handleLogout}

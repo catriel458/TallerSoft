@@ -104,6 +104,30 @@ router.put("/reserve/:id", async (req: Request, res: Response) => {
         console.error("Error reservando turno:", error);
         res.status(500).json({ error: "Error al reservar el turno" });
     }
+
+    router.get("/user", async (req: Request, res: Response) => {
+        try {
+            const userId = req.session.userId;
+
+            if (!userId) {
+                return res.status(401).json({ error: "No autorizado" });
+            }
+
+            // Convertir de string a número, ya que userId es string según la definición
+            const userIdNum = parseInt(userId);
+
+            const userAppointments = await db
+                .select()
+                .from(appointments)
+                .where(eq(appointments.userId, userIdNum));
+
+            res.json(userAppointments);
+        } catch (error) {
+            console.error("Error obteniendo appointments del usuario:", error);
+            res.status(500).json({ error: "Error obteniendo appointments" });
+        }
+    });
+
 });
 
 export default router;

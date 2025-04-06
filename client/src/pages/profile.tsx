@@ -31,8 +31,9 @@ import {
   User,
   Reparacion,
   Turno,
-  HistorialPatente
-} from "@shared/schema";
+  HistorialPatente,
+  Appointment
+} from "../../../shared/schema"; // Ajusta la ruta según la estructura de tu proyecto
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -110,6 +111,7 @@ const changePasswordSchema = z.object({
 
 type ProfileUpdateForm = z.infer<typeof profileUpdateSchema>;
 type ChangePasswordForm = z.infer<typeof changePasswordSchema>;
+
 export default function ProfilePage() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -158,12 +160,27 @@ export default function ProfilePage() {
     }
   }, [user, profileForm]);
 
-  // Obtener todos los turnos
+  // Query para obtener turnos del sistema antiguo
   const { data: allTurnos = [], isLoading: isLoadingTurnos } = useQuery<Turno[]>({
     queryKey: ["/api/turnos"],
     queryFn: async () => {
       const response = await apiRequest("GET", "/api/turnos");
       return response.json();
+    },
+    enabled: !!user,
+  });
+
+  // Query para obtener los turnos reservados por el usuario desde el calendario
+  const { data: userAppointments = [], isLoading: isLoadingAppointments } = useQuery<Appointment[]>({
+    queryKey: ["/api/appointments/user"],
+    queryFn: async () => {
+      try {
+        const response = await apiRequest("GET", `/api/appointments/user`);
+        return response.json();
+      } catch (error) {
+        console.error("Error cargando appointments del usuario:", error);
+        return [];
+      }
     },
     enabled: !!user,
   });
@@ -343,7 +360,7 @@ export default function ProfilePage() {
     return userParts.some(part => turnoNombre.includes(part));
   });
 
-  // Filtrar reparaciones para el usuario actual - mejorar la lógica
+  // Filtrar reparaciones para el usuario actual
   const filteredReparaciones = allReparaciones.filter(rep => {
     if (!user?.Apyn) return false;
 
@@ -384,7 +401,12 @@ export default function ProfilePage() {
       console.log("Todas las reparaciones cargadas:", allReparaciones.length);
       console.log("Reparaciones filtradas para el usuario:", filteredReparaciones.length);
     }
-  }, [allTurnos, allReparaciones, filteredTurnos, filteredReparaciones]);
+
+    if (userAppointments?.length) {
+      console.log("Turnos del calendario:", userAppointments.length);
+    }
+  }, [allTurnos, allReparaciones, filteredTurnos, filteredReparaciones, userAppointments]);
+
   // Manejador de cambio de imágenes
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>, field: string) => {
     const file = e.target.files?.[0];
@@ -564,6 +586,7 @@ export default function ProfilePage() {
   ];
 
   if (!user) return null;
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -861,6 +884,7 @@ export default function ProfilePage() {
               </CardContent>
             </Card>
           </TabsContent>
+
           <TabsContent value="turnos" className="space-y-6">
             <Card>
               <CardHeader>
@@ -870,14 +894,14 @@ export default function ProfilePage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {isLoadingTurnos ? (
+                {isLoadingTurnos || isLoadingAppointments ? (
                   <div className="text-center py-4">
                     <p className="mb-2">Cargando turnos...</p>
                     <p className="text-xs text-muted-foreground">
                       Buscando turnos asociados a {user.Apyn || user.username}
                     </p>
                   </div>
-                ) : filteredTurnos.length === 0 ? (
+                ) : (filteredTurnos.length === 0 && userAppointments.length === 0) ? (
                   <div className="text-center py-6">
                     <Clock className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                     <h3 className="text-lg font-medium mb-2">No tienes turnos reservados</h3>
@@ -886,67 +910,105 @@ export default function ProfilePage() {
                   </div>
                 ) : (
                   <>
-                    <div className="rounded-md border mb-6">
-                      <div className="p-4">
-                        <h3 className="font-medium mb-2 flex items-center gap-2">
-                          <Calendar className="h-4 w-4" />
-                          Próximos turnos
-                        </h3>
-                        {filteredTurnos
-                          .filter(turno => {
-                            // Filtrar por fecha futura y no cancelados
-                            const turnoFecha = new Date(turno.fecha);
-                            const hoy = new Date();
-                            return turnoFecha >= hoy && turno.asistencia !== "cancelada";
-                          })
-                          .slice(0, 2)
-                          .map((turno, idx) => (
-                            <div
-                              key={turno.id}
-                              className={`flex items-center justify-between p-3 rounded-md ${idx % 2 === 0 ? "bg-muted/50" : ""
-                                }`}
-                            >
-                              <div>
-                                <h4 className="font-medium">{turno.nombreCliente}</h4>
-                                <div className="text-muted-foreground text-sm flex items-center gap-1 mt-1">
-                                  <Calendar className="h-3 w-3" />
-                                  {turno.fecha}
-                                  <span className="mx-1">·</span>
-                                  <Clock className="h-3 w-3" />
-                                  {turno.horario}
+                    {/* Turnos tradicionales (filtrados por nombre) */}
+                    {filteredTurnos.length > 0 && (
+                      <>
+                        <div className="rounded-md border mb-6">
+                          <div className="p-4">
+                            <h3 className="font-medium mb-2 flex items-center gap-2">
+                              <Calendar className="h-4 w-4" />
+                              Próximos turnos
+                            </h3>
+                            {filteredTurnos
+                              .filter(turno => {
+                                // Filtrar por fecha futura y no cancelados
+                                const turnoFecha = new Date(turno.fecha);
+                                const hoy = new Date();
+                                return turnoFecha >= hoy && turno.asistencia !== "cancelada";
+                              })
+                              .slice(0, 2)
+                              .map((turno, idx) => (
+                                <div
+                                  key={turno.id}
+                                  className={`flex items-center justify-between p-3 rounded-md ${idx % 2 === 0 ? "bg-muted/50" : ""}`}
+                                >
+                                  <div>
+                                    <h4 className="font-medium">{turno.nombreCliente}</h4>
+                                    <div className="text-muted-foreground text-sm flex items-center gap-1 mt-1">
+                                      <Calendar className="h-3 w-3" />
+                                      {turno.fecha}
+                                      <span className="mx-1">·</span>
+                                      <Clock className="h-3 w-3" />
+                                      {turno.horario}
+                                    </div>
+                                  </div>
+                                  <Badge
+                                    variant={
+                                      turno.asistencia === "confirmada" ? "default" :
+                                        turno.asistencia === "pendiente" ? "secondary" :
+                                          "outline"
+                                    }
+                                  >
+                                    {turno.asistencia}
+                                  </Badge>
                                 </div>
+                              ))}
+                          </div>
+                        </div>
+                        <h3 className="font-medium mb-4">Historial completo de turnos</h3>
+                        <DataTable
+                          columns={turnosColumns}
+                          data={filteredTurnos}
+                        />
+                      </>
+                    )}
+
+                    {/* Turnos del sistema de calendario (appointments) */}
+                    {userAppointments.length > 0 && (
+                      <div className="mt-8">
+                        <h3 className="font-medium mb-4 flex items-center gap-2">
+                          <Calendar className="h-4 w-4" />
+                          Turnos reservados desde el calendario
+                        </h3>
+                        <div className="space-y-4">
+                          {userAppointments.map((appointment) => (
+                            <div key={appointment.id} className="border rounded-md p-4">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <h4 className="font-medium">{appointment.title}</h4>
+                                  <div className="text-muted-foreground text-sm flex items-center gap-1 mt-1">
+                                    <Calendar className="h-3 w-3" />
+                                    {new Date(appointment.start).toLocaleDateString()}
+                                    <span className="mx-1">·</span>
+                                    <Clock className="h-3 w-3" />
+                                    {new Date(appointment.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} -
+                                    {new Date(appointment.end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  </div>
+                                </div>
+                                <Badge
+                                  variant={
+                                    appointment.status === "reservado" ? "secondary" :
+                                      appointment.status === "completado" ? "default" :
+                                        "outline"
+                                  }
+                                >
+                                  {appointment.status}
+                                </Badge>
                               </div>
-                              <Badge
-                                variant={
-                                  turno.asistencia === "confirmada" ? "default" :
-                                    turno.asistencia === "pendiente" ? "secondary" :
-                                      "outline"
-                                }
-                              >
-                                {turno.asistencia}
-                              </Badge>
+                              {appointment.description && (
+                                <p className="text-sm mt-2 text-muted-foreground">{appointment.description}</p>
+                              )}
                             </div>
                           ))}
+                        </div>
                       </div>
-                    </div>
-
-                    <h3 className="font-medium mb-4">Historial completo de turnos</h3>
-                    <DataTable
-                      columns={turnosColumns}
-                      data={filteredTurnos}
-                    />
-
-                    <DebugInfo data={{
-                      total: allTurnos.length,
-                      filtrados: filteredTurnos.length,
-                      userApyn: user.Apyn,
-                      muestra: filteredTurnos.slice(0, 1)
-                    }} title="Turnos" />
+                    )}
                   </>
                 )}
               </CardContent>
             </Card>
           </TabsContent>
+
           <TabsContent value="reparaciones" className="space-y-6">
             <Card>
               <CardHeader>

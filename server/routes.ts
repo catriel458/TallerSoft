@@ -17,7 +17,7 @@ declare module "express-session" {
   interface SessionData {
     isAdmin: boolean;
     id: string | null;
-    userId: number | null;
+    userId: string; // Cambiado de number | null a string para coincidir
   }
 }
 

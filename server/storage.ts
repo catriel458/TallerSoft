@@ -1,13 +1,13 @@
-import { 
-  users, 
-  turnos, 
-  reparaciones, 
+import {
+  users,
+  turnos,
+  reparaciones,
   historialPatentes,
-  type User, 
-  type InsertUser, 
-  type Turno, 
-  type InsertTurno, 
-  type Reparacion, 
+  type User,
+  type InsertUser,
+  type Turno,
+  type InsertTurno,
+  type Reparacion,
   type InsertReparacion,
   type HistorialPatente,
   type InsertHistorialPatente,
@@ -17,6 +17,8 @@ import { eq, desc } from "drizzle-orm";
 import { randomBytes } from "crypto";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import Database from "better-sqlite3";
+import { Appointment, InsertAppointment } from "@shared/schema";
+import { appointments } from "@shared/schema";
 
 // Configurar conexión a SQLite
 const sqlite = new Database("./data/database.sqlite");
@@ -52,6 +54,14 @@ export interface IStorage {
   // Historial patentes operations
   getPatenteHistory(userId: number): Promise<HistorialPatente[]>;
   createPatenteHistory(data: InsertHistorialPatente): Promise<HistorialPatente>;
+
+  // Appointments operations
+  getAppointments(): Promise<Appointment[]>;
+  createAppointment(appointment: InsertAppointment): Promise<Appointment>;
+  updateAppointment(id: number, data: Partial<InsertAppointment>): Promise<Appointment | undefined>;
+  deleteAppointment(id: number): Promise<boolean>;
+  reserveAppointment(id: number, userId: number): Promise<Appointment | undefined>;
+
 }
 
 export class DatabaseStorage implements IStorage {
@@ -125,11 +135,11 @@ export class DatabaseStorage implements IStorage {
 
   async validateUserPassword(id: number, password: string): Promise<boolean> {
     const user = await this.getUserById(id);
-    
+
     if (!user) {
       return false;
     }
-    
+
     // En un entorno de producción real, deberías usar bcrypt.compare
     // En este ejemplo simplificado, comparamos directamente las contraseñas
     return user.password === password;
@@ -146,7 +156,7 @@ export class DatabaseStorage implements IStorage {
 
   async updateUserImage(id: number, field: string, imageData: string): Promise<User | undefined> {
     const updateData: Record<string, string> = {};
-    
+
     if (field === 'imagen') {
       updateData.imagen = imageData;
     } else if (field === 'imagenAuto') {
@@ -154,13 +164,13 @@ export class DatabaseStorage implements IStorage {
     } else {
       throw new Error("Campo de imagen no válido");
     }
-    
+
     const result = await db
       .update(users)
       .set(updateData)
       .where(eq(users.id, id))
       .returning();
-    
+
     return result.length > 0 ? result[0] : undefined;
   }
 
@@ -251,7 +261,7 @@ export class DatabaseStorage implements IStorage {
         .from(historialPatentes)
         .where(eq(historialPatentes.userId, userId))
         .orderBy(desc(historialPatentes.fechaCambio));
-      
+
       return result;
     } catch (error) {
       console.error("Error obteniendo historial de patentes:", error);
@@ -265,13 +275,69 @@ export class DatabaseStorage implements IStorage {
         .insert(historialPatentes)
         .values(data)
         .returning();
-      
+
       return result[0];
     } catch (error) {
       console.error("Error registrando patente en historial:", error);
       throw error;
     }
   }
+  // Agrega estos métodos al final de la clase DatabaseStorage, justo antes del cierre de la clase
+
+// Appointments
+async getAppointments(): Promise<Appointment[]> {
+  return await db.select().from(appointments);
+}
+
+async createAppointment(appointment: InsertAppointment): Promise<Appointment> {
+  const result = await db
+    .insert(appointments)
+    .values(appointment)
+    .returning();
+  return result[0];
+}
+
+async updateAppointment(id: number, data: Partial<InsertAppointment>): Promise<Appointment | undefined> {
+  const result = await db
+    .update(appointments)
+    .set(data)
+    .where(eq(appointments.id, id))
+    .returning();
+  return result.length > 0 ? result[0] : undefined;
+}
+
+async deleteAppointment(id: number): Promise<boolean> {
+  const result = await db
+    .delete(appointments)
+    .where(eq(appointments.id, id))
+    .returning();
+  return result.length > 0;
+}
+
+async reserveAppointment(id: number, userId: number): Promise<Appointment | undefined> {
+  // Verificar si el turno existe y está disponible
+  const existingAppointment = await db.select().from(appointments).where(eq(appointments.id, id)).limit(1);
+  
+  if (!existingAppointment.length || existingAppointment[0].status !== "sin_tomar") {
+    return undefined;
+  }
+  
+  // Actualizar el estado del turno a reservado y guardar el ID del usuario
+  const result = await db
+    .update(appointments)
+    .set({
+      status: "reservado",
+      userId: userId,
+      description: existingAppointment[0].description
+        ? `${existingAppointment[0].description} - Reservado por cliente ID: ${userId}`
+        : `Reservado por cliente ID: ${userId}`
+    })
+    .where(eq(appointments.id, id))
+    .returning();
+  
+  return result.length > 0 ? result[0] : undefined;
+}
+
 }
 
 export const storage = new DatabaseStorage();

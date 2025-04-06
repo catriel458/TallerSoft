@@ -60,6 +60,7 @@ export const appointments = sqliteTable("appointments", {
   description: text("description"),
   isAvailable: integer("is_available", { mode: "boolean" }).default(true),
   status: text("status").default("sin_tomar"),
+  userId: integer("user_id"), // Nuevo campo para guardar el ID del usuario
 });
 
 // Esquemas base

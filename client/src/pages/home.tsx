@@ -9,11 +9,11 @@ export default function Home() {
   const { data: appointments = [], isLoading: appointmentsLoading } = useQuery<Appointment[]>({
     queryKey: ["/api/appointments"],
   });
-  
+
   const { data: reparaciones = [], isLoading: reparacionesLoading } = useQuery<Reparacion[]>({
     queryKey: ["/api/reparaciones"],
   });
-  
+
   const { data: currentUser } = useQuery<User>({
     queryKey: ["/api/user/current"],
   });
@@ -22,32 +22,32 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState("estadisticas");
   const [stats, setStats] = useState({
     turnosHoy: 0,
-    ingresosTotal: 0,
+    kilometrosTotales: 0,  // Reemplazando ingresosTotal
     trabajosCompletados: 0
   });
-  
+
   // Calcular estadísticas basadas en datos reales
   useEffect(() => {
     if (!appointmentsLoading && !reparacionesLoading) {
       // Obtener la fecha de hoy en formato ISO
       const today = new Date().toISOString().split('T')[0];
-      
+
       // Calcular turnos para hoy
-      const turnosHoy = appointments.filter(app => 
+      const turnosHoy = appointments.filter(app =>
         app.start.split('T')[0] === today
       ).length;
-      
-      // Ingresos totales (suma de todos los costos de reparaciones)
-      const ingresosTotal = reparaciones.reduce((total, rep) => 
-        total + (rep.costo || 0), 0
+
+      // Contar vehículos únicos (por patente)
+      const kilometrosTotales = reparaciones.reduce((total, rep) =>
+        total + (rep.cantidadKm || 0), 0
       );
-      
+
       // Trabajos completados (todas las reparaciones registradas)
       const trabajosCompletados = reparaciones.length;
-      
+
       setStats({
         turnosHoy,
-        ingresosTotal,
+        kilometrosTotales,
         trabajosCompletados
       });
     }
@@ -77,17 +77,17 @@ export default function Home() {
   // Formatear fecha y hora para mostrar
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('es-AR', { 
-      day: '2-digit', 
-      month: '2-digit', 
-      year: 'numeric' 
+    return date.toLocaleDateString('es-AR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
     });
   };
-  
+
   const formatTime = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleTimeString('es-AR', { 
-      hour: '2-digit', 
+    return date.toLocaleTimeString('es-AR', {
+      hour: '2-digit',
       minute: '2-digit',
       hour12: false
     });
@@ -129,7 +129,7 @@ export default function Home() {
     <div className="min-h-screen flex flex-col bg-white dark:bg-gray-900">
       <Header />
       <main className="flex-1">
-      <section className="relative h-[calc(100vh-64px)]">
+        <section className="relative h-[calc(100vh-64px)]">
           <div className="absolute inset-0 z-10 bg-gradient-to-b from-black/90 via-black/70 to-black/90" />
           <div className="absolute inset-0">
             <img
@@ -144,32 +144,32 @@ export default function Home() {
                 Sistema de gestión integrado
               </h1>
               <p className="text-xl text-gray-300 mb-8 animate-fade-in-delayed hover:text-white transition-colors">
-                {currentUser?.tipoUsuario === "cliente" 
-                  ? "Gestiona tus turnos y consulta tu historial de reparaciones" 
+                {currentUser?.tipoUsuario === "cliente"
+                  ? "Gestiona tus turnos y consulta tu historial de reparaciones"
                   : "Organiza tus turnos, trabajos y muchos más, todo en una misma app"}
               </p>
-              
+
               {/* Dashboard Tabs */}
               <div className="bg-gray-800/80 backdrop-blur-md rounded-lg p-6 mt-6 border border-gray-700 shadow-xl">
                 <div className="flex mb-6 border-b border-gray-700">
-                  <button 
+                  <button
                     onClick={() => setActiveTab("estadisticas")}
-                    className={`px-4 py-2 font-medium text-sm ${activeTab === "estadisticas" 
-                      ? "text-white border-b-2 border-blue-500" 
+                    className={`px-4 py-2 font-medium text-sm ${activeTab === "estadisticas"
+                      ? "text-white border-b-2 border-blue-500"
                       : "text-gray-400 hover:text-white"}`}
                   >
                     Estadísticas
                   </button>
-                  <button 
+                  <button
                     onClick={() => setActiveTab("proximosTurnos")}
-                    className={`px-4 py-2 font-medium text-sm ${activeTab === "proximosTurnos" 
-                      ? "text-white border-b-2 border-blue-500" 
+                    className={`px-4 py-2 font-medium text-sm ${activeTab === "proximosTurnos"
+                      ? "text-white border-b-2 border-blue-500"
                       : "text-gray-400 hover:text-white"}`}
                   >
                     Próximos Turnos
                   </button>
                 </div>
-                
+
                 {appointmentsLoading || reparacionesLoading ? (
                   <div className="flex justify-center items-center h-40">
                     <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
@@ -185,8 +185,12 @@ export default function Home() {
                       <div className="text-gray-300 text-sm">Trabajos Completados</div>
                     </div>
                     <div className="bg-gray-700/60 p-4 rounded-lg flex flex-col items-center">
-                      <div className="text-xl font-bold text-white mb-2">{formatCurrency(stats.ingresosTotal)}</div>
-                      <div className="text-gray-300 text-sm">Ingresos Totales</div>
+                      <div className="text-4xl font-bold text-white mb-2">
+                        {(stats.kilometrosTotales > 1000)
+                          ? `${Math.floor(stats.kilometrosTotales / 1000)}K`
+                          : stats.kilometrosTotales}
+                      </div>
+                      <div className="text-gray-300 text-sm">Kilómetros Atendidos</div>
                     </div>
                   </div>
                 ) : (
@@ -212,12 +216,12 @@ export default function Home() {
                         No hay turnos próximos programados
                       </div>
                     )}
-                    <button 
+                    <button
                       onClick={() => window.location.href = '/calendario'}
                       className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-md text-sm font-medium transition-colors mt-2"
                     >
-                      {currentUser?.tipoUsuario === "cliente" 
-                        ? "Agendar un turno" 
+                      {currentUser?.tipoUsuario === "cliente"
+                        ? "Agendar un turno"
                         : "Ver calendario"}
                     </button>
                   </div>
@@ -264,9 +268,9 @@ export default function Home() {
               </div>
               <div className="w-full md:w-2/5">
                 <div className="relative">
-                  <img 
-                    src="https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?q=80&w=1674&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" 
-                    alt="Servicio técnico" 
+                  <img
+                    src="https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?q=80&w=1674&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+                    alt="Servicio técnico"
                     className="rounded-lg shadow-2xl z-10 relative"
                   />
                   <div className="absolute -bottom-4 -right-4 w-full h-full bg-blue-500 rounded-lg -z-10"></div>
@@ -282,7 +286,7 @@ export default function Home() {
             <p className="text-gray-300 text-center max-w-3xl mx-auto mb-12">
               Conoce el significado de los principales símbolos que puedes encontrar en tu tablero. Identifica a tiempo posibles problemas y mantén tu vehículo en óptimas condiciones.
             </p>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[
                 {
@@ -300,8 +304,8 @@ export default function Home() {
                   name: "Check Engine / Motor",
                   icon: (
                     <svg className="w-16 h-16 text-yellow-500 mx-auto" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M15.73 3H8.27L3 8.27v7.46L8.27 21h7.46L21 15.73V8.27L15.73 3zM19 14.9L14.9 19H9.1L5 14.9V9.1L9.1 5h5.8L19 9.1v5.8z"/>
-                      <path d="M12 16c.83 0 1.5-.67 1.5-1.5S12.83 13 12 13s-1.5.67-1.5 1.5.67 1.5 1.5 1.5zM11 10h2v2h-2z"/>
+                      <path d="M15.73 3H8.27L3 8.27v7.46L8.27 21h7.46L21 15.73V8.27L15.73 3zM19 14.9L14.9 19H9.1L5 14.9V9.1L9.1 5h5.8L19 9.1v5.8z" />
+                      <path d="M12 16c.83 0 1.5-.67 1.5-1.5S12.83 13 12 13s-1.5.67-1.5 1.5.67 1.5 1.5 1.5zM11 10h2v2h-2z" />
                     </svg>
                   ),
                   description: "Indica un problema en el sistema de control del motor. Puede ser desde un sensor defectuoso hasta problemas graves. El vehículo debe ser diagnosticado con un escáner especial para identificar el código de error específico.",
@@ -311,9 +315,9 @@ export default function Home() {
                   name: "Sistema de Frenos / ABS",
                   icon: (
                     <svg className="w-16 h-16 text-red-500 mx-auto" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
-                      <path fill="black" d="M12 6C8.69 6 6 8.69 6 12s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm0 10c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z"/>
-                      <text x="11" y="14" style={{font: 'bold 6px sans-serif', fill: 'white'}}>ABS</text>
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" />
+                      <path fill="black" d="M12 6C8.69 6 6 8.69 6 12s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm0 10c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z" />
+                      <text x="11" y="14" style={{ font: 'bold 6px sans-serif', fill: 'white' }}>ABS</text>
                     </svg>
                   ),
                   description: "Alerta sobre problemas en el sistema de frenos o ABS. Podría indicar nivel bajo de líquido de frenos, freno de mano activado, o fallas en el sistema antibloqueo. Verificar inmediatamente el sistema de frenos.",
@@ -323,8 +327,8 @@ export default function Home() {
                   name: "Batería/Sistema de Carga",
                   icon: (
                     <svg className="w-16 h-16 text-red-500 mx-auto" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/>
-                      <path fill="white" d="M10 20v-6h4v6h-4z"/>
+                      <path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z" />
+                      <path fill="white" d="M10 20v-6h4v6h-4z" />
                     </svg>
                   ),
                   description: "Problemas con el sistema eléctrico o de carga. Si se enciende durante la conducción, puede indicar fallas en el alternador, batería o conexiones. El vehículo podría detenerse pronto si el alternador no está cargando la batería.",
@@ -334,8 +338,8 @@ export default function Home() {
                   name: "Temperatura del Motor",
                   icon: (
                     <svg className="w-16 h-16 text-red-500 mx-auto" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
-                      <path fill="white" d="M9.5 14.5l2.5-1.5V7h-1v5.3l-1.8 1.2.3 1zm4.7-1.5l-1.2-.8V7.5h1.2v5.5z"/>
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" />
+                      <path fill="white" d="M9.5 14.5l2.5-1.5V7h-1v5.3l-1.8 1.2.3 1zm4.7-1.5l-1.2-.8V7.5h1.2v5.5z" />
                     </svg>
                   ),
                   description: "Indica sobrecalentamiento del motor. Detén el vehículo inmediatamente, apaga el motor y permite que se enfríe. Verifica el nivel de refrigerante cuando el motor esté frío. Nunca abras el radiador con el motor caliente.",
@@ -345,8 +349,8 @@ export default function Home() {
                   name: "Airbag / SRS",
                   icon: (
                     <svg className="w-16 h-16 text-red-500 mx-auto" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M7 14c0 1.66 1.34 3 3 3 .55 0 1-.45 1-1s-.45-1-1-1c-.55 0-1-.45-1-1v-1h9.63l-2.77-5H16V8c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2s.9-2 2-2h9.5l1 1h.46L9.4 2.45c-.11-.17-.3-.29-.51-.29-.35 0-.64.29-.64.64v1.08c-2.27.47-4 2.47-4 4.87V10h2c.55 0 1 .45 1 1s-.45 1-1 1H4v2z"/>
-                      <path d="M7 14c0 1.66 1.34 3 3 3s3-1.34 3-3-1.34-3-3-3-3 1.34-3 3zm8 0c0 1.66 1.34 3 3 3s3-1.34 3-3-1.34-3-3-3-3 1.34-3 3z"/>
+                      <path d="M7 14c0 1.66 1.34 3 3 3 .55 0 1-.45 1-1s-.45-1-1-1c-.55 0-1-.45-1-1v-1h9.63l-2.77-5H16V8c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2s.9-2 2-2h9.5l1 1h.46L9.4 2.45c-.11-.17-.3-.29-.51-.29-.35 0-.64.29-.64.64v1.08c-2.27.47-4 2.47-4 4.87V10h2c.55 0 1 .45 1 1s-.45 1-1 1H4v2z" />
+                      <path d="M7 14c0 1.66 1.34 3 3 3s3-1.34 3-3-1.34-3-3-3-3 1.34-3 3zm8 0c0 1.66 1.34 3 3 3s3-1.34 3-3-1.34-3-3-3-3 1.34-3 3z" />
                     </svg>
                   ),
                   description: "Falla en el sistema de airbag. Indica un problema con los airbags o los sensores relacionados. El sistema podría no funcionar correctamente en caso de colisión. Requiere diagnóstico inmediato.",
@@ -356,9 +360,9 @@ export default function Home() {
                   name: "Presión de Neumáticos",
                   icon: (
                     <svg className="w-16 h-16 text-yellow-500 mx-auto" viewBox="0 0 24 24" fill="currentColor">
-                      <circle cx="12" cy="12" r="10"/>
-                      <path fill="white" d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/>
-                      <path fill="white" d="M12 2.5V4M12 20v1.5M4 12H2.5M21.5 12H20"/>
+                      <circle cx="12" cy="12" r="10" />
+                      <path fill="white" d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z" />
+                      <path fill="white" d="M12 2.5V4M12 20v1.5M4 12H2.5M21.5 12H20" />
                     </svg>
                   ),
                   description: "Sistema de monitoreo de presión de neumáticos. Indica que uno o más neumáticos tienen presión baja. Revisa y ajusta la presión de todos los neumáticos, incluyendo el de repuesto si corresponde.",
@@ -368,8 +372,8 @@ export default function Home() {
                   name: "Sistema de Estabilidad",
                   icon: (
                     <svg className="w-16 h-16 text-yellow-500 mx-auto" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"/>
-                      <path fill="white" d="M7 12l-2 2 2 2M17 12l2 2-2 2M10 17l2 2 2-2M10 7l2-2 2 2"/>
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z" />
+                      <path fill="white" d="M7 12l-2 2 2 2M17 12l2 2-2 2M10 17l2 2 2-2M10 7l2-2 2 2" />
                     </svg>
                   ),
                   description: "Control de estabilidad/tracción. Si parpadea, el sistema está funcionando para mantener la estabilidad. Si permanece encendida, hay un problema en el sistema que requiere diagnóstico.",
@@ -379,8 +383,8 @@ export default function Home() {
                   name: "Filtro de Combustible/Agua",
                   icon: (
                     <svg className="w-16 h-16 text-yellow-500 mx-auto" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M5 20h14v-2H5v2zM5 10h4v6h6v-6h4l-7-7-7 7z"/>
-                      <circle cx="17" cy="16" r="2"/>
+                      <path d="M5 20h14v-2H5v2zM5 10h4v6h6v-6h4l-7-7-7 7z" />
+                      <circle cx="17" cy="16" r="2" />
                     </svg>
                   ),
                   description: "Indica presencia de agua en el filtro de combustible (común en vehículos diésel). El agua debe drenarse del filtro para evitar daños en el sistema de inyección de combustible.",
@@ -390,7 +394,7 @@ export default function Home() {
                   name: "Nivel Bajo de Combustible",
                   icon: (
                     <svg className="w-16 h-16 text-yellow-500 mx-auto" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M19.77 7.23l.01-.01-3.72-3.72L15 4.56l2.11 2.11c-.94.36-1.61 1.26-1.61 2.33 0 1.38 1.12 2.5 2.5 2.5.36 0 .69-.08 1-.21v7.21c0 .55-.45 1-1 1s-1-.45-1-1V14c0-1.1-.9-2-2-2h-1V5c0-1.1-.9-2-2-2H6c-1.1 0-2 .9-2 2v16h10v-7.5h1.5v5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V9c0-.69-.28-1.32-.73-1.77zM12 13.5V19H6v-7h6v1.5zm0-3.5H6V5h6v5zm6 0c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/>
+                      <path d="M19.77 7.23l.01-.01-3.72-3.72L15 4.56l2.11 2.11c-.94.36-1.61 1.26-1.61 2.33 0 1.38 1.12 2.5 2.5 2.5.36 0 .69-.08 1-.21v7.21c0 .55-.45 1-1 1s-1-.45-1-1V14c0-1.1-.9-2-2-2h-1V5c0-1.1-.9-2-2-2H6c-1.1 0-2 .9-2 2v16h10v-7.5h1.5v5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V9c0-.69-.28-1.32-.73-1.77zM12 13.5V19H6v-7h6v1.5zm0-3.5H6V5h6v5zm6 0c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z" />
                     </svg>
                   ),
                   description: "Indica nivel bajo de combustible. Generalmente se enciende cuando queda aproximadamente un 10-15% de combustible en el tanque. Recargar combustible lo antes posible para evitar quedarse sin él.",
@@ -400,8 +404,8 @@ export default function Home() {
                   name: "Luces Altas",
                   icon: (
                     <svg className="w-16 h-16 text-blue-500 mx-auto" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
-                      <path fill="white" d="M9 16h2V8H9v8zm4 0h2V8h-2v8z"/>
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" />
+                      <path fill="white" d="M9 16h2V8H9v8zm4 0h2V8h-2v8z" />
                     </svg>
                   ),
                   description: "Indica que las luces altas (largas) están activadas. Recuerda apagarlas cuando te cruces con otros vehículos para no deslumbrar a los conductores que vienen en sentido contrario.",
@@ -411,7 +415,7 @@ export default function Home() {
                   name: "Cinturón de Seguridad",
                   icon: (
                     <svg className="w-16 h-16 text-red-500 mx-auto" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25M7.5 20.25L16.5 3.75" strokeWidth="1.5" stroke="currentColor" fill="none"/>
+                      <path d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25M7.5 20.25L16.5 3.75" strokeWidth="1.5" stroke="currentColor" fill="none" />
                     </svg>
                   ),
                   description: "Recuerda abrochar el cinturón de seguridad. Esta luz y una alarma se activan cuando el vehículo está en movimiento y el conductor o pasajeros no tienen abrochado el cinturón.",
@@ -423,11 +427,10 @@ export default function Home() {
                     {warning.icon}
                   </div>
                   <h3 className="text-xl font-semibold text-white mb-2 text-center">{warning.name}</h3>
-                  <div className={`text-xs font-semibold py-1 px-2 rounded-full mb-3 inline-block ${
-                    warning.urgencia === "Alta" ? "bg-red-500/20 text-red-400" :
+                  <div className={`text-xs font-semibold py-1 px-2 rounded-full mb-3 inline-block ${warning.urgencia === "Alta" ? "bg-red-500/20 text-red-400" :
                     warning.urgencia === "Media" ? "bg-yellow-500/20 text-yellow-400" :
-                    "bg-blue-500/20 text-blue-400"
-                  }`}>
+                      "bg-blue-500/20 text-blue-400"
+                    }`}>
                     Urgencia: {warning.urgencia}
                   </div>
                   <p className="text-gray-300 text-sm">{warning.description}</p>
@@ -442,7 +445,7 @@ export default function Home() {
                 </div>
               ))}
             </div>
-            
+
             <div className="text-center mt-12">
               <p className="text-gray-400 mb-4">
                 Estos son solo algunos de los símbolos más comunes. Tu vehículo puede tener indicadores adicionales.
@@ -480,14 +483,14 @@ export default function Home() {
                   avatar: "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?q=80&w=1887&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
                 },
               ].map((testimonial, index) => (
-                <div 
-                  key={index} 
+                <div
+                  key={index}
                   className="bg-gray-800 rounded-lg p-6 shadow-lg border border-gray-700 hover:border-blue-500 transition-all"
                 >
                   <div className="flex items-center mb-4">
-                    <img 
-                      src={testimonial.avatar} 
-                      alt={testimonial.name} 
+                    <img
+                      src={testimonial.avatar}
+                      alt={testimonial.name}
                       className="w-12 h-12 rounded-full object-cover mr-4"
                     />
                     <div>
@@ -548,7 +551,7 @@ export default function Home() {
             </div>
           </div>
         </section>
-        
+
         <section className="container mx-auto px-4 py-16">
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white text-center mb-12 hover:text-primary transition-colors">
             Funcionalidades del Sistema
@@ -644,7 +647,7 @@ export default function Home() {
             </div>
           </div>
         </section>
-        
+
         {/* Sección de estadísticas */}
         <section className="py-16 bg-gradient-to-r from-blue-600 to-blue-800">
           <div className="container mx-auto px-4">
@@ -668,7 +671,7 @@ export default function Home() {
             </div>
           </div>
         </section>
-        
+
         {/* CTA final */}
         <section className="py-20 bg-gray-900">
           <div className="container mx-auto px-4 text-center">
@@ -684,10 +687,10 @@ export default function Home() {
             </button>
           </div>
         </section>
-        
+
         {/* Sección de contacto flotante */}
         <div className="fixed bottom-6 right-6 z-30">
-          <button 
+          <button
             className="bg-blue-600 hover:bg-blue-700 text-white rounded-full p-4 shadow-lg flex items-center justify-center transition-all hover:scale-105"
             onClick={() => alert('Función de contacto rápido')}
           >
@@ -702,4 +705,3 @@ export default function Home() {
   );
 }
 
-                      

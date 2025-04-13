@@ -1,50 +1,132 @@
-Tigre Hogar
+# TallerSoft - Sistema de Gestión para Talleres Mecánicos
 
-Tigre Hogar es un ecommerce profesional con un diseño atractivo, donde puedes encontrar productos del hogar, ropa y mucho más. Los usuarios pueden agregar, editar y eliminar productos de manera sencilla.
-Tecnologías utilizadas
 
-Este proyecto está construido con:
+TallerSoft es una aplicación web completa para la gestión de talleres mecánicos que integra reservas de turnos, historiales de reparaciones, perfiles de clientes y vehículos, y un panel administrativo intuitivo.
 
-    Node.js: Backend del sistema.
-    React: Frontend interactivo.
-    SQLite: Base de datos ligera y fácil de usar.
-    Vite: Herramienta de construcción rápida.
-    Tailwind CSS: Framework para estilos rápidos y responsivos.
-    Drizzle: Librería para manejar bases de datos en el frontend.
+## Características principales
 
-    Clona el repositorio:
+🔧 **Gestión de Turnos**
+- Calendario interactivo para visualizar y asignar turnos
+- Sistema de reservas en línea para clientes
+- Notificaciones y recordatorios
 
-    git clone https://github.com/catriel458/tigrehogar-replit.git
+🚗 **Historial de Vehículos**
+- Registro detallado de todas las reparaciones
+- Seguimiento de kilometraje y mantenimientos
+- Historial completo de patentes por cliente
 
-Navega a la carpeta del proyecto:
+👤 **Perfiles de Usuario**
+- Perfiles diferenciados para clientes y talleres
+- Gestión de datos personales y de contacto
+- Upload de imágenes de perfil y vehículos
 
-cd tigrehogar-replit
-Configura el archivo .env:
+📊 **Dashboard Administrativo**
+- Estadísticas en tiempo real
+- Indicadores de rendimiento clave
+- Vista general del negocio
 
-    Abre el archivo .env.
-    Comenta la primera línea.
-    Descomenta la segunda línea para que el proyecto corra en el puerto local localhost:5000.
+## Tecnologías utilizadas
 
-    Instala las dependencias:
+- **Frontend**: React.js, TypeScript, TailwindCSS, shadcn/ui components
+- **Backend**: Node.js, Express
+- **Base de Datos**: SQLite con Drizzle ORM
+- **Autenticación**: JWT, bcrypt para seguridad de contraseñas
+- **API**: RESTful con manejo de sesiones
 
-    npm install
-Inicia el servidor de desarrollo:
+## Estructura del Proyecto
 
-npm start
-Asegúrate de tener Node.js instalado antes de correr el proyecto.
+```
+/
+├── client/               # Frontend React
+│   ├── components/       # Componentes reutilizables
+│   ├── hooks/            # Custom React hooks
+│   ├── pages/            # Páginas principales
+│   └── public/           # Archivos estáticos
+│
+├── server/               # Backend Express
+│   ├── routes/           # Rutas de la API
+│   ├── controllers/      # Controladores de la lógica de negocio
+│   ├── middleware/       # Middleware personalizado
+│   └── storage/          # Configuración de base de datos
+│
+└── shared/               # Código compartido
+    └── schema/           # Esquemas y tipos compartidos
+```
 
-Acceso de administrador
+## Instalación
 
-Puedes acceder a las opciones de administrador con la siguiente cuenta:
+### Requisitos previos
 
-    Usuario: codefalcon
-    Contraseña: admin1234
+- Node.js (v16 o superior)
+- npm o yarn
 
-    Acceso en línea
+### Pasos para instalación
 
-Si prefieres acceder al sitio en línea, puedes hacerlo desde su página en Railway:
+1. Clonar el repositorio
+```bash
+git clone https://github.com/catriel458/tallersoft.git
+cd tallersoft
+```
 
-https://tigrehogar.up.railway.app/
+2. Instalar dependencias del servidor
+```bash
+cd server
+npm install
+```
 
-¡Disfruta de la experiencia de Tigre Hogar!
+3. Instalar dependencias del cliente
+```bash
+cd ../client
+npm install
+```
 
+4. Ejecutar migraciones de la base de datos
+```bash
+cd ../server
+npm run migrate
+```
+
+## Ejecutar el proyecto
+
+### Desarrollo
+
+
+2. Iniciar el cliente (desde la carpeta client)
+```bash
+npm run dev
+```
+
+La aplicación estará disponible en http://localhost:5000
+
+### Producción
+
+https://tallersoft.com.ar/
+
+## Uso
+
+### Clientes
+
+Los usuarios registrados como clientes pueden:
+- Reservar turnos a través del calendario interactivo
+- Ver y gestionar su historial de reparaciones
+- Actualizar información de su perfil y vehículos
+- Recibir notificaciones sobre el estado de su vehículo
+
+### Talleres/Administradores
+
+Los usuarios registrados como talleres pueden:
+- Gestionar turnos y disponibilidad
+- Registrar reparaciones y mantenimientos
+- Ver estadísticas e informes de desempeño
+- Administrar clientes y vehículos
+
+
+## Contacto
+
+Para preguntas o sugerencias, contacta a:
+- Nombre: Catriel Cabrera
+- Email: catrielcabrera97@gmail.com
+
+---
+
+Desarrollado con ❤️ para talleres mecánicos que buscan modernizar su gestión.

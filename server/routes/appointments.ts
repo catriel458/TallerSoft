@@ -2,7 +2,7 @@ import { Router, Request, Response } from "express";
 import { db } from "../storage";
 import { appointments } from "@shared/schema";
 import { eq } from "drizzle-orm";
-import { storage } from "../storage"; // Agrega esta línea
+import { storage } from "../storage";
 
 const router = Router();
 
@@ -14,6 +14,33 @@ router.get("/", async (req: Request, res: Response) => {
     } catch (error) {
         console.error("Error fetching appointments:", error);
         res.status(500).json({ error: "Error fetching appointments" });
+    }
+});
+
+// Get appointments for the current user
+router.get("/user", async (req: Request, res: Response) => {
+    try {
+        const userId = req.session.userId;
+
+        if (!userId) {
+            return res.status(401).json({ error: "No autorizado" });
+        }
+
+        console.log("Buscando turnos para el usuario ID:", userId);
+
+        // Convertir de string a número si es necesario
+        const userIdNum = typeof userId === 'string' ? parseInt(userId) : userId;
+
+        const userAppointments = await db
+            .select()
+            .from(appointments)
+            .where(eq(appointments.userId, userIdNum));
+
+        console.log("Turnos encontrados:", userAppointments.length);
+        res.json(userAppointments);
+    } catch (error) {
+        console.error("Error obteniendo appointments del usuario:", error);
+        res.status(500).json({ error: "Error obteniendo appointments" });
     }
 });
 
@@ -68,12 +95,15 @@ router.delete("/:id", async (req: Request, res: Response) => {
 router.put("/reserve/:id", async (req: Request, res: Response) => {
     try {
         const id = parseInt(req.params.id);
-        const userId = req.session.userId ? parseInt(req.session.userId) : null;
+        const userId = req.session.userId;
 
         // Verificar si hay un usuario autenticado
         if (!userId) {
             return res.status(401).json({ error: "Debe iniciar sesión para reservar un turno" });
         }
+
+        // Convertir userId a número si es necesario
+        const userIdNum = typeof userId === 'string' ? parseInt(userId) : userId;
 
         // Verificar si el turno existe y está disponible
         const existingAppointment = await db.select().from(appointments).where(eq(appointments.id, id)).limit(1);
@@ -91,10 +121,10 @@ router.put("/reserve/:id", async (req: Request, res: Response) => {
             .update(appointments)
             .set({
                 status: "reservado",
-                userId: userId,
+                userId: userIdNum,
                 description: existingAppointment[0].description
-                    ? `${existingAppointment[0].description} - Reservado por cliente ID: ${userId}`
-                    : `Reservado por cliente ID: ${userId}`
+                    ? `${existingAppointment[0].description} - Reservado por cliente ID: ${userIdNum}`
+                    : `Reservado por cliente ID: ${userIdNum}`
             })
             .where(eq(appointments.id, id))
             .returning();
@@ -104,30 +134,6 @@ router.put("/reserve/:id", async (req: Request, res: Response) => {
         console.error("Error reservando turno:", error);
         res.status(500).json({ error: "Error al reservar el turno" });
     }
-
-    router.get("/user", async (req: Request, res: Response) => {
-        try {
-            const userId = req.session.userId;
-
-            if (!userId) {
-                return res.status(401).json({ error: "No autorizado" });
-            }
-
-            // Convertir de string a número, ya que userId es string según la definición
-            const userIdNum = parseInt(userId);
-
-            const userAppointments = await db
-                .select()
-                .from(appointments)
-                .where(eq(appointments.userId, userIdNum));
-
-            res.json(userAppointments);
-        } catch (error) {
-            console.error("Error obteniendo appointments del usuario:", error);
-            res.status(500).json({ error: "Error obteniendo appointments" });
-        }
-    });
-
 });
 
 export default router;

@@ -52,7 +52,8 @@ import {
   Key,
   MapPin,
   User as UserIcon,
-  Wrench
+  Wrench,
+  RefreshCw
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { DataTable } from "@/components/ui/data-table";
@@ -171,19 +172,46 @@ export default function ProfilePage() {
   });
 
   // Query para obtener los turnos reservados por el usuario desde el calendario
-  const { data: userAppointments = [], isLoading: isLoadingAppointments } = useQuery<Appointment[]>({
-    queryKey: ["/api/appointments/user"],
+  const {
+    data: userAppointments = [],
+    isLoading: isLoadingAppointments,
+    refetch: refetchUserAppointments
+  } = useQuery<Appointment[]>({
+    queryKey: ["/api/appointments/user", user?.id],
     queryFn: async () => {
       try {
+        console.log("Ejecutando consulta de appointments del usuario:", user?.id);
         const response = await apiRequest("GET", `/api/appointments/user`);
-        return response.json();
+
+        if (!response.ok) {
+          console.error("Error en respuesta de appointments:", await response.text());
+          throw new Error("Error al obtener appointments");
+        }
+
+        const data = await response.json();
+        console.log("Appointments recibidos:", data.length);
+        return data;
       } catch (error) {
         console.error("Error cargando appointments del usuario:", error);
         return [];
       }
     },
-    enabled: !!user,
+    enabled: !!user?.id,
+    staleTime: 60000,
+    retry: 3,
   });
+
+  // Efecto para refrescar los turnos cuando el usuario cambie
+  useEffect(() => {
+    if (user?.id) {
+      const timer = setTimeout(() => {
+        console.log("Refrescando datos de appointments para usuario:", user.id);
+        refetchUserAppointments();
+      }, 1000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [user?.id, refetchUserAppointments]);
 
   // Obtener todas las reparaciones
   const { data: allReparaciones = [], isLoading: isLoadingReparaciones } = useQuery<Reparacion[]>({
@@ -888,7 +916,27 @@ export default function ProfilePage() {
           <TabsContent value="turnos" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Mis Turnos</CardTitle>
+                <div className="flex justify-between items-center">
+                  <CardTitle>Mis Turnos</CardTitle>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => refetchUserAppointments()}
+                    disabled={isLoadingAppointments}
+                  >
+                    {isLoadingAppointments ? (
+                      <span className="flex items-center">
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        Cargando...
+                      </span>
+                    ) : (
+                      <span className="flex items-center">
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Refrescar
+                      </span>
+                    )}
+                  </Button>
+                </div>
                 <CardDescription>
                   Historial y próximos turnos reservados
                 </CardDescription>
@@ -898,15 +946,27 @@ export default function ProfilePage() {
                   <div className="text-center py-4">
                     <p className="mb-2">Cargando turnos...</p>
                     <p className="text-xs text-muted-foreground">
-                      Buscando turnos asociados a {user.Apyn || user.username}
+                      Buscando turnos asociados a {user.Apyn || user.username} (ID: {user.id})
                     </p>
                   </div>
                 ) : (filteredTurnos.length === 0 && userAppointments.length === 0) ? (
                   <div className="text-center py-6">
                     <Clock className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                     <h3 className="text-lg font-medium mb-2">No tienes turnos reservados</h3>
-                    <p className="text-muted-foreground mb-4">Puedes reservar un turno para tu próxima visita al taller</p>
-                    <Button>Reservar un turno</Button>
+                    <p className="text-muted-foreground mb-4">
+                      {userAppointments === undefined
+                        ? "Hubo un problema al cargar tus turnos"
+                        : "Puedes reservar un turno para tu próxima visita al taller"}
+                    </p>
+                    <div className="flex justify-center gap-2">
+                      <Button onClick={() => refetchUserAppointments()}>
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Refrescar turnos
+                      </Button>
+                      <Button variant="outline" onClick={() => window.location.href = '/calendario'}>
+                        Reservar un turno
+                      </Button>
+                    </div>
                   </div>
                 ) : (
                   <>
@@ -1082,3 +1142,4 @@ export default function ProfilePage() {
     </div>
   );
 }
+

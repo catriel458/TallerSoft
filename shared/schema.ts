@@ -69,6 +69,7 @@ export const insertUserSchema = createInsertSchema(users)
     username: true,
     email: true,
     password: true,
+    tipoUsuario: true, // Añadir esta línea para incluir tipoUsuario
   })
   .extend({
     password: z.string().min(6, "Password must be at least 6 characters"),

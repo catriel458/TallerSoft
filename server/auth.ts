@@ -60,7 +60,7 @@ async function sendPasswordResetEmail(email: string, token: string) {
 
 declare module "express-session" {
   interface SessionData {
-    userId: string;
+    userId: number;
     isAdmin: boolean;
   }
 }
@@ -151,8 +151,14 @@ export function setupAuth(app: Express) {
           console.error("Error regenerating session:", err);
           throw err;
         }
-        req.session.userId = user.id.toString();
+        req.session.userId = user.id;  // Guardar como número, no string
         req.session.isAdmin = isAdmin ?? false;
+
+        // Para debug
+        console.log("Sesión iniciada:", {
+          userId: req.session.userId,
+          isAdmin: req.session.isAdmin
+        });
       });
 
       await new Promise<void>((resolve, reject) => {
@@ -248,17 +254,17 @@ export function setupAuth(app: Express) {
   });
 
   // Add change password route for authenticated users
+  // Por esto:
   app.post("/api/users/change-password", async (req, res) => {
     if (!req.session.userId) {
       return res.status(401).json({ error: "Not authenticated" });
     }
 
-    const userId = parseInt(req.session.userId);
+    const userId = req.session.userId; // Definida aquí la primera vez
 
     try {
       const { currentPassword, newPassword } = req.body;
-
-      const user = await storage.getUserById(parseInt(req.session.id));
+      const user = await storage.getUserById(userId);
       if (!user) {
         return res.status(404).json({ error: "Usuario no encontrado" });
       }
@@ -272,7 +278,8 @@ export function setupAuth(app: Express) {
       // Hash new password
       const hashedPassword = await hashPassword(newPassword);
 
-      const userId = parseInt(req.session.id);
+      // ELIMINA ESTA LÍNEA: const userId = parseInt(req.session.id);
+      // Ya tenemos userId definido arriba
 
       // Update password in database
       await storage.updateUserPassword(userId, hashedPassword);
@@ -286,20 +293,20 @@ export function setupAuth(app: Express) {
 
   // Middleware to check if user is authenticated
   app.use("/api/protected", (req, res, next) => {
-    if (!req.session.id) {
+    if (!req.session.userId) {
       return res.status(401).json({ error: "Unauthorized" });
     }
     next();
-  });
+  })
 
   // Get current user
   app.get("/api/me", async (req, res) => {
-    if (!req.session.id) {
+    if (!req.session.userId) {
       return res.status(401).json({ error: "Not authenticated" });
     }
 
     try {
-      const userId = parseInt(req.session.id);
+      const userId = req.session.userId;  // Ya es un número
       const user = await storage.getUserById(userId);
       if (!user) {
         return res.status(404).json({ error: "User not found" });

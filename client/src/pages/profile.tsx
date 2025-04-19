@@ -1100,9 +1100,9 @@ export default function ProfilePage() {
                         <p className="text-2xl font-semibold">{filteredReparaciones.length}</p>
                       </div>
                       <div className="bg-muted rounded-lg p-4">
-                        <h3 className="text-sm font-medium text-muted-foreground mb-1">Gasto total</h3>
+                        <h3 className="text-sm font-medium text-muted-foreground mb-1">Kilómetros totales</h3>
                         <p className="text-2xl font-semibold">
-                          ${filteredReparaciones.reduce((sum, rep) => sum + rep.costo, 0).toLocaleString('es-AR')}
+                          {filteredReparaciones.reduce((sum, rep) => sum + (rep.cantidadKm || 0), 0).toLocaleString('es-AR')} km
                         </p>
                       </div>
                       <div className="bg-muted rounded-lg p-4">

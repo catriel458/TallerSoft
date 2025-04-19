@@ -51,6 +51,29 @@ const requireAuth = (req: Request, res: Response, next: Function) => {
 export function registerRoutes(app: Express) {
   app.use("/api/appointments", appointmentsRouter);
 
+  // ===== RUTA PARA OBTENER USUARIO ACTUAL (PARA EL CALENDARIO) =====
+  app.get("/api/user/current", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      const user = await storage.getUserById(userId);
+
+      if (!user) {
+        return res.status(404).json({ error: "Usuario no encontrado" });
+      }
+
+      // Enviar solo los datos necesarios para el componente de calendario
+      res.json({
+        id: user.id,
+        username: user.username,
+        tipoUsuario: user.tipoUsuario,
+        email: user.email
+      });
+    } catch (error) {
+      console.error("Error obteniendo información del usuario:", error);
+      res.status(500).json({ error: "Error obteniendo información del usuario" });
+    }
+  });
+
   // ===== RUTAS DE TURNOS =====
   app.get("/api/turnos", async (_req, res) => {
     try {

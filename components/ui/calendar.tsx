@@ -51,10 +51,13 @@ function Calendar({
         day_hidden: "invisible",
         ...classNames,
       }}
-      components={{
-        IconLeft: ({ ...props }) => <ChevronLeft className="h-4 w-4" />,
-        IconRight: ({ ...props }) => <ChevronRight className="h-4 w-4" />,
-      }}
+      // ✅ Después (sintaxis v9)
+        components={{
+          Chevron: ({ orientation, ...props }) => 
+            orientation === "left" 
+              ? <ChevronLeft className="h-4 w-4" /> 
+              : <ChevronRight className="h-4 w-4" />,
+        }}
       {...props}
     />
   )

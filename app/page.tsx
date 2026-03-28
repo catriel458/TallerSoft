@@ -80,7 +80,7 @@ export default function Home() {
     .slice(0, 3); // Mostrar solo los próximos 3
 
   // Formatear fecha y hora para mostrar
-  const formatDate = (dateString) => {
+  const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('es-AR', {
       day: '2-digit',
@@ -89,7 +89,7 @@ export default function Home() {
     });
   };
 
-  const formatTime = (dateString) => {
+  const formatTime = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleTimeString('es-AR', {
       hour: '2-digit',
@@ -99,7 +99,7 @@ export default function Home() {
   };
 
   // Formatear moneda
-  const formatCurrency = (amount) => {
+  const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-AR', {
       style: 'currency',
       currency: 'ARS'
@@ -107,8 +107,8 @@ export default function Home() {
   };
 
   // Mapear status a texto legible
-  const getStatusText = (status) => {
-    const statusMap = {
+  const getStatusText = (status: string) => {
+    const statusMap: Record<string, string> = {
       "sin_tomar": "Sin tomar",
       "tomado": "Reservado",
       "en_proceso": "En proceso",
@@ -119,16 +119,16 @@ export default function Home() {
   };
 
   // Determinar color según estado
-  const getStatusColor = (status) => {
-    const colorMap = {
-      "sin_tomar": "bg-gray-500",
-      "tomado": "bg-blue-500",
-      "en_proceso": "bg-yellow-500",
-      "completado": "bg-green-500",
-      "cancelado": "bg-red-500"
-    };
-    return colorMap[status] || "bg-gray-500";
+ const getStatusColor = (status: string) => {
+  const colorMap: Record<string, string> = {
+    "sin_tomar": "bg-gray-500",
+    "tomado": "bg-blue-500",
+    "en_proceso": "bg-yellow-500",
+    "completado": "bg-green-500",
+    "cancelado": "bg-red-500"
   };
+  return colorMap[status] || "bg-gray-500";
+};
 
   return (
     <div className="min-h-screen flex flex-col bg-white dark:bg-gray-900">
@@ -204,7 +204,7 @@ export default function Home() {
                       proximosTurnos.map((turno, index) => (
                         <div key={index} className="bg-gray-700/60 p-3 rounded-lg flex justify-between items-center">
                           <div className="flex items-center">
-                            <div className={`${getStatusColor(turno.status)} w-3 h-3 rounded-full mr-3`}></div>
+                            <div className={`${getStatusColor(turno.status ?? "")} w-3 h-3 rounded-full mr-3`}></div>
                             <div>
                               <div className="text-white font-medium">{turno.title}</div>
                               <div className="text-gray-300 text-sm">{turno.description || "Sin descripción"}</div>

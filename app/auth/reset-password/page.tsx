@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const token = searchParams.get("token");
@@ -25,39 +25,22 @@ export default function ResetPasswordPage() {
 
     const handleForgotPassword = async (e: React.FormEvent) => {
         e.preventDefault();
-
         if (!email) {
-            toast({
-                title: "Error",
-                description: "Por favor ingresa tu email",
-                variant: "destructive",
-            });
+            toast({ title: "Error", description: "Por favor ingresa tu email", variant: "destructive" });
             return;
         }
-
         setIsLoading(true);
-
         try {
             const response = await fetch("/api/auth/forgot-password", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email }),
             });
-
             if (!response.ok) throw new Error("Error al enviar el correo");
-
-            toast({
-                title: "¡Éxito!",
-                description: "Se ha enviado un enlace a tu correo para restablecer la contraseña",
-            });
-
+            toast({ title: "¡Éxito!", description: "Se ha enviado un enlace a tu correo para restablecer la contraseña" });
             router.push("/auth");
         } catch (error) {
-            toast({
-                title: "Error",
-                description: "No se pudo enviar el correo de restablecimiento",
-                variant: "destructive",
-            });
+            toast({ title: "Error", description: "No se pudo enviar el correo de restablecimiento", variant: "destructive" });
         } finally {
             setIsLoading(false);
         }
@@ -65,57 +48,30 @@ export default function ResetPasswordPage() {
 
     const handleResetPassword = async (e: React.FormEvent) => {
         e.preventDefault();
-
         if (!password || !confirmPassword) {
-            toast({
-                title: "Error",
-                description: "Por favor completa todos los campos",
-                variant: "destructive",
-            });
+            toast({ title: "Error", description: "Por favor completa todos los campos", variant: "destructive" });
             return;
         }
-
         if (password.length < 8) {
-            toast({
-                title: "Error",
-                description: "La contraseña debe tener al menos 8 caracteres",
-                variant: "destructive",
-            });
+            toast({ title: "Error", description: "La contraseña debe tener al menos 8 caracteres", variant: "destructive" });
             return;
         }
-
         if (password !== confirmPassword) {
-            toast({
-                title: "Error",
-                description: "Las contraseñas no coinciden",
-                variant: "destructive",
-            });
+            toast({ title: "Error", description: "Las contraseñas no coinciden", variant: "destructive" });
             return;
         }
-
         setIsLoading(true);
-
         try {
             const response = await fetch("/api/auth/reset-password", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ token, password }),
             });
-
             if (!response.ok) throw new Error("Error al restablecer la contraseña");
-
-            toast({
-                title: "¡Éxito!",
-                description: "Tu contraseña ha sido restablecida exitosamente",
-            });
-
+            toast({ title: "¡Éxito!", description: "Tu contraseña ha sido restablecida exitosamente" });
             router.push("/auth");
         } catch (error) {
-            toast({
-                title: "Error",
-                description: "No se pudo restablecer la contraseña. El enlace puede haber expirado",
-                variant: "destructive",
-            });
+            toast({ title: "Error", description: "No se pudo restablecer la contraseña. El enlace puede haber expirado", variant: "destructive" });
         } finally {
             setIsLoading(false);
         }
@@ -132,41 +88,19 @@ export default function ResetPasswordPage() {
                     <CardHeader>
                         <CardTitle className="text-white">Restablecer Contraseña</CardTitle>
                         <CardDescription className="text-gray-400">
-                            {token
-                                ? "Ingresa tu nueva contraseña"
-                                : "Ingresa tu email para restablecer tu contraseña"}
+                            {token ? "Ingresa tu nueva contraseña" : "Ingresa tu email para restablecer tu contraseña"}
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
                         {token ? (
                             <form onSubmit={handleResetPassword} className="space-y-4">
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium text-gray-200" htmlFor="password">
-                                        Nueva Contraseña
-                                    </label>
-                                    <Input
-                                        id="password"
-                                        type="password"
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        placeholder="Ingresa tu nueva contraseña"
-                                        required
-                                        className="bg-gray-800 border-gray-700 text-white"
-                                    />
+                                    <label className="text-sm font-medium text-gray-200" htmlFor="password">Nueva Contraseña</label>
+                                    <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Ingresa tu nueva contraseña" required className="bg-gray-800 border-gray-700 text-white" />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium text-gray-200" htmlFor="confirmPassword">
-                                        Confirmar Contraseña
-                                    </label>
-                                    <Input
-                                        id="confirmPassword"
-                                        type="password"
-                                        value={confirmPassword}
-                                        onChange={(e) => setConfirmPassword(e.target.value)}
-                                        placeholder="Confirma tu nueva contraseña"
-                                        required
-                                        className="bg-gray-800 border-gray-700 text-white"
-                                    />
+                                    <label className="text-sm font-medium text-gray-200" htmlFor="confirmPassword">Confirmar Contraseña</label>
+                                    <Input id="confirmPassword" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Confirma tu nueva contraseña" required className="bg-gray-800 border-gray-700 text-white" />
                                 </div>
                                 <Button type="submit" className="w-full" disabled={isLoading}>
                                     {isLoading ? "Guardando..." : "Guardar nueva contraseña"}
@@ -175,18 +109,8 @@ export default function ResetPasswordPage() {
                         ) : (
                             <form onSubmit={handleForgotPassword} className="space-y-4">
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium text-gray-200" htmlFor="email">
-                                        Email
-                                    </label>
-                                    <Input
-                                        id="email"
-                                        type="email"
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        placeholder="Ingresa tu email"
-                                        required
-                                        className="bg-gray-800 border-gray-700 text-white"
-                                    />
+                                    <label className="text-sm font-medium text-gray-200" htmlFor="email">Email</label>
+                                    <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Ingresa tu email" required className="bg-gray-800 border-gray-700 text-white" />
                                 </div>
                                 <Button type="submit" className="w-full" disabled={isLoading}>
                                     {isLoading ? "Enviando..." : "Enviar enlace de restablecimiento"}
@@ -197,5 +121,13 @@ export default function ResetPasswordPage() {
                 </Card>
             </div>
         </div>
+    );
+}
+
+export default function ResetPasswordPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-black text-white">Cargando...</div>}>
+            <ResetPasswordContent />
+        </Suspense>
     );
 }
